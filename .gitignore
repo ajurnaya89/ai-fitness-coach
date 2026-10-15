@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Environment Variables & Keys
+.env
+.env.local
+
+# Database & Runtime Data
+data/*.db
+data/active_plan*.json
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
