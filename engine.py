@@ -1337,8 +1337,56 @@ FOCUS_DEFINITIONS = {
 
 
 # ---------------------------------------------------------------------------
-# 6. BIOMECHANICAL & INVENTORY FILTERING ENGINE
 # ---------------------------------------------------------------------------
+# 6. BIOMECHANICAL & INVENTORY FILTERING ENGINE (HARD FIREWALL)
+# ---------------------------------------------------------------------------
+def is_wrist_straining_exercise(ex: Any) -> bool:
+    """
+    Hard biomechanical firewall for wrists:
+    Blocks ANY exercise where body weight or compressive load is supported on palms or wrists.
+    Accepts both Exercise and PlannedExercise objects.
+    """
+    ex_joints = [j.lower().strip() for j in getattr(ex, "joint_stress", [])]
+    if "wrist" in ex_joints:
+        return True
+
+    ex_id = getattr(ex, "id", getattr(ex, "exercise_id", ""))
+    ex_name = getattr(ex, "name", "")
+    id_name = f"{ex_id} {ex_name} {getattr(ex, 'name_ua', '')}".lower()
+    text_desc = f"{id_name} {getattr(ex, 'setup', '')} {getattr(ex, 'setup_ua', '')} {getattr(ex, 'execution', '')} {getattr(ex, 'execution_ua', '')} {getattr(ex, 'instructions', '')} {getattr(ex, 'instructions_ua', '')}".lower()
+
+    # Forearm exception: if explicitly performed on forearms, palms are unloaded
+    is_forearm = any(w in text_desc for w in ["forearm", "передпліч"])
+
+    # Strict palm-bearing keywords that are blocked
+    palm_keywords = [
+        "push-up", "pushup", "push_up", "віджимання", "отжимания",
+        "burpee", "берпі",
+        "mountain climber", "mountain_climber", "скелелаз",
+        "bear crawl", "bear_crawl", "bear plank",
+        "renegade row", "renegade_row",
+        "pike push", "pike_push", "pike to push",
+        "crab", "downward dog", "downward-facing dog"
+    ]
+    for kw in palm_keywords:
+        if kw in text_desc:
+            if is_forearm and any(safe in id_name for safe in ["forearm", "передпліч"]):
+                continue
+            return True
+
+    # Planks: must be on forearms to be allowed when wrists are injured
+    if any(p in id_name for p in ["plank", "планка"]):
+        if not is_forearm:
+            return True
+
+    # Quadruped / All-fours: must be on forearms to be allowed
+    if any(q in id_name for q in ["all fours", "all_fours", "quadruped", "рачки", "четвереньк"]):
+        if not is_forearm:
+            return True
+
+    return False
+
+
 def filter_exercises(
     exercises: List[Exercise],
     location: str = "home",
@@ -1348,7 +1396,11 @@ def filter_exercises(
     medical_conditions: Optional[List[str]] = None,
     sex: str = "female"
 ) -> List[Exercise]:
-    """Filters exercises according to venue, equipment inventory, joint isolation, and medical restrictions."""
+    """
+    Filters exercises according to venue, equipment inventory, joint isolation (Category A: 12 joints),
+    and comprehensive medical conditions (Categories B-E: 13 conditions).
+    ENFORCES HARD FIREWALL: NEVER FALLS BACK TO UNFILTERED FORBIDDEN EXERCISES!
+    """
     avoid_set = set(i.lower().strip() for i in (injuries_to_avoid or []))
     med_set = set(m.lower().strip() for m in (medical_conditions or []))
     loc = location.lower().strip()
@@ -1360,9 +1412,6 @@ def filter_exercises(
 
     filtered = []
     for ex in exercises:
-        # Never pick mobility movements in strength routines (unless routine is specifically mobility/rehab)
-        # Note: mobility routines filter their own pool directly
-
         # Location filter
         if loc == "home" and "home" not in ex.location:
             continue
@@ -1406,66 +1455,160 @@ def filter_exercises(
             if not can_do and not ex.equipment_alternatives:
                 continue
 
-        # 1. Joint & Injury Contraindications
         ex_joints = set(j.lower().strip() for j in ex.joint_stress)
+        id_name = f"{ex.id} {ex.name} {getattr(ex, 'name_ua', '')}".lower()
+        setup_inst = f"{getattr(ex, 'setup', '')} {getattr(ex, 'setup_ua', '')} {getattr(ex, 'execution', '')} {getattr(ex, 'execution_ua', '')} {getattr(ex, 'instructions', '')} {getattr(ex, 'instructions_ua', '')}".lower()
 
-        # WRIST: Strict zero-palm-bearing rule
-        if "wrist" in avoid_set:
-            if "wrist" in ex_joints:
+        # =========================================================================
+        # CATEGORY A: JOINTS, SPINE & POSTURE ISOLATION (12 Items)
+        # =========================================================================
+
+        # 1. WRIST: Hard biomechanical firewall (zero palm bearing)
+        if "wrist" in avoid_set and is_wrist_straining_exercise(ex):
+            continue
+
+        # 2. ELBOW: Epicondylitis (avoid heavy skull crushers and narrow tricep strain)
+        if "elbow" in avoid_set:
+            if "elbow" in ex_joints:
                 continue
-            # Also exclude exercises that require supporting bodyweight on palms
-            name_lower = (ex.name + " " + ex.id).lower()
-            if any(term in name_lower for term in [
-                "pushup", "push_up", "push-up", "bear_crawl", "hand_plank", "burpee"
-            ]) and "forearm" not in name_lower and "couch" not in name_lower:
+            if any(k in id_name for k in ["skull_crusher", "skullcrusher", "close_grip_pushup", "french_press"]):
                 continue
 
-        # KNEE: Exclude deep shear load
+        # 3. SHOULDER: Impingement / Rotator Cuff (avoid upright rows, behind-neck, deep dips)
+        if "shoulder" in avoid_set:
+            if "shoulder" in ex_joints:
+                continue
+            if any(k in id_name for k in ["upright_row", "behind_neck", "dip", "pike_pushup"]):
+                continue
+
+        # 4. NECK: Cervical spine / Osteochondrosis (avoid neck sit-ups and heavy shrugs)
+        if "neck" in avoid_set:
+            if "neck" in ex_joints:
+                continue
+            if any(k in id_name for k in ["situp", "sit_up", "shrug"]):
+                continue
+
+        # 5. THORACIC KYPHOSIS: Posture (exclude isolated chest shorteners without counter-pull)
+        if "thoracic_kyphosis" in avoid_set:
+            pass  # Retraction and rear-delt work are boosted during scoring
+
+        # 6. LOWER BACK: Hernia / Protrusion (Zero axial spinal loading)
+        if any(b in avoid_set for b in ["lower_back", "back", "spinal_hernia"]):
+            if "lower_back" in ex_joints or "spine" in ex_joints:
+                continue
+            if any(k in id_name for k in ["bb_back_squat", "good_morning", "bb_bent_over_row", "deadlift_straight_leg", "straight_leg_deadlift"]):
+                continue
+
+        # 7. HYPERLORDOSIS: Anterior Pelvic Tilt (ban hyperextensions & hip flexor dominant hangs)
+        if "hyperlordosis" in avoid_set:
+            if any(k in id_name for k in ["hyperextension", "good_morning", "hanging_leg", "straight_leg_raise"]):
+                continue
+
+        # 8. SCOLIOSIS: Pelvic Asymmetry (avoid heavy bilateral axial compression)
+        if "scoliosis" in avoid_set:
+            if any(k in id_name for k in ["bb_back_squat", "good_morning", "bb_overhead_press"]):
+                continue
+
+        # 9. HIP: Coxarthrosis / Snapping hip (avoid extreme hip flexion angles & jump lunges)
+        if "hip" in avoid_set:
+            if "hip" in ex_joints:
+                continue
+            if any(k in id_name for k in ["deep_lunge", "jump_lunge", "pistol_squat"]):
+                continue
+
+        # 10. KNEE: Meniscus / Ligament (avoid deep shear load, sissy/jump squats, forward lunges)
         if "knee" in avoid_set:
             if "knee" in ex_joints:
                 continue
-            name_lower = ex.id.lower()
-            if any(term in name_lower for term in ["sissy_squat", "jump_squat", "pistol_squat"]):
+            if any(k in id_name for k in ["sissy_squat", "jump_squat", "pistol_squat", "forward_lunge", "walking_lunge"]):
                 continue
 
-        # NO_KNEELING: Exclude quadruped, kneeling, and half-kneeling drills
+        # 11. NO KNEELING: Cannot kneel on knees (exclude quadruped/all-fours and kneeling)
         if "no_kneeling" in avoid_set:
-            name_lower = (ex.name + " " + ex.id).lower()
-            if any(term in name_lower for term in ["kneeling", "quadruped", "all_fours", "all-fours", "bird_dog"]):
+            if any(k in id_name or k in setup_inst for k in ["kneeling", "quadruped", "all_fours", "all-fours", "bird_dog", "рачки", "четвереньк"]):
                 continue
 
-        # LOWER BACK / HYPERLORDOSIS / SPINAL HERNIA: Zero axial spine loading
-        if any(b in avoid_set for b in ["lower_back", "hyperlordosis", "spinal_hernia", "back"]):
-            if "lower_back" in ex_joints or "spine" in ex_joints:
+        # 12. ANKLE: Flat feet / Valgus / Plantar Fasciitis (exclude plyometric jumps)
+        if "ankle" in avoid_set:
+            if "ankle" in ex_joints:
                 continue
-            name_lower = ex.id.lower()
-            if any(term in name_lower for term in ["good_morning", "bb_back_squat", "deadlift_straight_leg"]):
+            if any(k in id_name for k in ["jump", "plyo", "burpee", "hop"]):
                 continue
 
-        # Standard check for other avoided joints (hip, shoulder, elbow, ankle)
-        if any(joint in avoid_set for joint in ex_joints):
+        # Standard fallback check for other avoid tags
+        if any(j in avoid_set for j in ex_joints):
             continue
 
-        # 2. Medical & Endocrine Conditions
-        # DIASTASIS RECTI & PELVIC FLOOR SAFE MODE
-        if "diastasis_pelvic_floor" in med_set:
-            name_lower = (ex.name + " " + ex.id).lower()
-            # Strictly forbid crunches, sit-ups, V-ups, hanging leg raises, jumping jacks
-            if any(term in name_lower for term in [
-                "crunch", "situp", "sit_up", "v_up", "v-up", "hanging_leg", "jump", "burpee"
-            ]) and "reverse" not in name_lower:
+        # =========================================================================
+        # CATEGORIES B-E: MEDICAL & HEALTH CONDITIONS (13 Items)
+        # =========================================================================
+
+        # 13. DIASTASIS RECTI: Strictly forbid crunches, sit-ups, V-ups, bicycles, prone doming planks
+        if any(d in med_set for d in ["diastasis", "diastasis_pelvic_floor"]):
+            if any(k in id_name for k in ["crunch", "situp", "sit_up", "v_up", "v-up", "bicycle", "hanging_leg", "burpee"]) and "reverse" not in id_name:
+                continue
+            if ("plank" in id_name or "планка" in id_name) and not ("side_plank" in id_name or "бокова" in id_name or "forearm" in id_name):
+                continue
+
+        # 14. PELVIC FLOOR WEAKNESS: Ban jumps, heavy breath-holding (Valsalva), wide heavy squats
+        if "pelvic_floor" in med_set:
+            if any(k in id_name for k in ["jump", "burpee", "heavy_sumo"]):
+                continue
+
+        # 15. POSTPARTUM: Gentle recovery (no crunches, jumps, or axial loading)
+        if "postpartum" in med_set:
+            if any(k in id_name for k in ["crunch", "situp", "v_up", "jump", "burpee", "bb_back_squat"]):
+                continue
+
+        # 16. MENSTRUAL CARE: Sensitive cycle (avoid heavy pelvic strain and crunches)
+        if "menstrual_care" in med_set:
+            if any(k in id_name for k in ["crunch", "situp", "v_up", "heavy_leg_press"]):
+                continue
+
+        # 17. VARICOSE VEINS: Avoid prolonged heavy standing static loads
+        if "varicose_veins" in med_set:
+            if any(k in id_name for k in ["static_squat_hold", "wall_sit", "standing_calf_raise_weighted"]):
+                continue
+
+        # 18. HYPERTENSION: Ban head-below-heart inversions & decline pushups
+        if "hypertension" in med_set:
+            if any(k in id_name for k in ["pike", "decline_pushup", "feet_elevated_pushup", "inversion"]):
+                continue
+
+        # 19. EDEMA: Lymphatic drainage focus (avoid static blood pooling)
+        if "edema" in med_set:
+            if any(k in id_name for k in ["wall_sit", "static_squat_hold"]):
+                continue
+
+        # 20. THYROID: Hypothyroidism (prevent cortisol spikes from extreme HIIT)
+        if "thyroid" in med_set:
+            if any(k in id_name for k in ["burpee", "jump_squat", "devil_press"]):
+                continue
+
+        # 21. ADRENAL FATIGUE: Chronic burnout (moderate pacing, no explosive failure)
+        if "adrenal_fatigue" in med_set:
+            if any(k in id_name for k in ["burpee", "jump_squat", "devil_press"]):
+                continue
+
+        # 22. ASTHMA: Exercise-induced breathlessness (avoid breathless circuits)
+        if "asthma" in med_set:
+            if any(k in id_name for k in ["burpee", "mountain_climber"]):
+                continue
+
+        # 23. GERD / ACID REFLUX: Avoid crunches and inverted torso postures
+        if "gerd_reflux" in med_set:
+            if any(k in id_name for k in ["crunch", "situp", "v_up", "pike", "decline"]):
                 continue
 
         # FEMALE MODE: Avoid heavy weighted lateral side bends that thicken the waist
         if sex == "female":
-            name_lower = ex.id.lower()
-            if "side_bend" in name_lower or "db_side_bend" in name_lower:
+            if "side_bend" in id_name or "db_side_bend" in id_name:
                 continue
 
         filtered.append(ex)
 
-    # Safety fallback: ensure candidates exist
-    return filtered if filtered else exercises
+    # STRICT GUARANTEE: Never fall back to unfiltered exercises!
+    return filtered
 
 
 def adjust_reps_and_rest(
@@ -1509,8 +1652,10 @@ def adjust_reps_and_rest(
         reps = "10 reps"
         rest = 30
 
-    # THYROID / HYPOTHYROIDISM CARE: Prevent cortisol spikes, enforce minimum 60-75s rest
-    if "thyroid" in meds:
+    # MEDICAL REST CONSTRAINTS: Prevent cortisol spikes, breathlessness & cardiovascular strain
+    if any(c in meds for c in ["hypertension", "asthma"]):
+        rest = max(rest, 75)
+    if any(c in meds for c in ["thyroid", "adrenal_fatigue"]):
         rest = max(rest, 65)
 
     return reps, rest, sets

@@ -573,7 +573,8 @@ EXERCISE_CATALOG = [
         stability_demand="High",
         unilateral=True,
         instructions="Hold push-up plank on flat-sided dumbbells. Row one dumbbell to hip without letting hips rotate side to side.",
-        default_sets=3, default_reps="8-10 each", rest_seconds=60
+        default_sets=3, default_reps="8-10 each", rest_seconds=60,
+        joint_stress=["wrist"]
     ),
     Exercise(
         id="trx_inverted_row",
@@ -2308,7 +2309,8 @@ EXERCISE_CATALOG = [
     ),
     Exercise(
         id="combo_db_side_plank_lateral_raise",
-        name="Side Plank Hold with Dumbbell Lateral Raise",
+        name="Forearm Side Plank Hold with Dumbbell Lateral Raise",
+        name_ua="Планка на передпліччі з махами гантеллю",
         movement_pattern="Combo",
         exercise_family="Compound Combo Hybrid",
         primary_muscles=["Obliques", "Lateral Deltoids"],
@@ -2337,7 +2339,7 @@ EXERCISE_CATALOG = [
         unilateral=True,
         instructions="On hands and knees, extend left leg straight behind. Row right dumbbell to ribcage while maintaining stable neutral spine.",
         default_sets=3, default_reps="8-10 each side", rest_seconds=45,
-        joint_stress=[],
+        joint_stress=["wrist", "no_kneeling"],
         location=["home", "gym"],
         trx_anchor="any",
         is_compound_combo=True

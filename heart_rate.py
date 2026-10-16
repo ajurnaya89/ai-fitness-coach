@@ -193,13 +193,32 @@ def analyze_workout_heart_rate(
     workout_format: str = "standard",
     age: int = 30,
     custom_max_hr: Optional[int] = None,
-    medical_conditions: Optional[List[str]] = None
+    medical_conditions: Optional[List[str]] = None,
+    # Smartwatch Telemetry Hub fields
+    watch_duration_minutes: Optional[int] = None,
+    active_calories: Optional[int] = None,
+    total_calories: Optional[int] = None,
+    zone1_mins: Optional[int] = None,
+    zone2_mins: Optional[int] = None,
+    zone3_mins: Optional[int] = None,
+    zone4_mins: Optional[int] = None,
+    zone5_mins: Optional[int] = None,
+    dominant_zone: Optional[int] = None,
+    training_load: Optional[float] = None,
+    watch_training_load: Optional[float] = None,
+    recovery_time_hours: Optional[int] = None,
+    **kwargs
 ) -> Dict[str, Any]:
+    if training_load is None and watch_training_load is not None:
+        training_load = watch_training_load
     """
-    Analyzes workout heart rate telemetry (Min HR, Max HR, Avg HR) against today's target physiological zone and RPE.
+    Analyzes workout heart rate & smartwatch telemetry against today's target physiological zone and RPE.
     Detects physiological adaptations:
-    - Case 1: Cardio limiting muscles (High HR, high RPE from breathlessness) -> +20-30s rest, replace jumps with controlled tempo.
-    - Case 2: Incomplete recovery / Thyroid / Edema alert (Elevated rest HR) -> -20% volume, prioritize supine/seated.
+    - Caloric Burn Density analysis relative to goal (weight loss vs muscle gain).
+    - HR Recovery Spread & CNS Fatigue Alert (elevated resting HR or long recovery hours).
+    - Zone 5 cardiovascular spike vs Easy RPE compensation (+20-30s rest).
+    - Case 1: Cardio limiting muscles -> +20-30s rest, replace jumps with controlled tempo.
+    - Case 2: Incomplete recovery / Thyroid / Edema alert -> -20% volume, prioritize supine/seated.
     - Case 3: Optimal stimulus -> Progressive overload unlocked!
     """
     target_info = get_target_zone_for_workout(goal, workout_format, age, custom_max_hr)
@@ -473,6 +492,66 @@ def analyze_workout_heart_rate(
             f"можна сміливо додати +1–2 кг або +1 повторення з чистою технікою!"
         )
 
+    # ---------------------------------------------------------------------------
+    # Smartwatch Telemetry Hub Cross-Analysis
+    # ---------------------------------------------------------------------------
+    telemetry_notes_en = []
+    telemetry_notes_ua = []
+
+    # 1. Caloric Burn Density
+    duration = watch_duration_minutes or 55
+    calories = active_calories or total_calories
+    cal_density = None
+    if calories and duration and duration > 0:
+        cal_density = round(calories / duration, 1)
+        if g == "weight_loss":
+            if cal_density >= 6.5:
+                telemetry_notes_en.append(f"🔥 Exceptional caloric burn density: {cal_density} kcal/min ({calories} kcal in {duration}m), optimal for rapid fat oxidation.")
+                telemetry_notes_ua.append(f"🔥 Висока щільність спалювання калорій: {cal_density} ккал/хв ({calories} ккал за {duration}хв), оптимально для швидкого жироспалення.")
+            elif cal_density < 4.0:
+                telemetry_notes_en.append(f"💡 Caloric burn density was moderate ({cal_density} kcal/min). Next time, shorten transitions or slightly increase movement tempo.")
+                telemetry_notes_ua.append(f"💡 Щільність спалювання калорій помірна ({cal_density} ккал/хв). Наступного разу скоротіть паузи або трохи підвищіть темп.")
+            else:
+                telemetry_notes_en.append(f"✓ Healthy fat-burning metabolic density: {cal_density} kcal/min ({calories} kcal).")
+                telemetry_notes_ua.append(f"✓ Збалансована метаболічна щільність для схуднення: {cal_density} ккал/хв ({calories} ккал).")
+        elif g in ["muscle_gain", "strength"]:
+            if cal_density > 8.0:
+                telemetry_notes_en.append(f"⚡ High caloric expenditure ({cal_density} kcal/min). Prioritize post-workout carb+protein replenishment to protect muscle tissue.")
+                telemetry_notes_ua.append(f"⚡ Висока витрата калорій ({cal_density} ккал/хв). Обов'язково закрийте вуглеводно-білкове вікно для захисту м'язів.")
+            else:
+                telemetry_notes_en.append(f"💪 Targeted hypertrophy calorie expenditure: {cal_density} kcal/min ({calories} kcal). Energy was preserved for high mechanical tension.")
+                telemetry_notes_ua.append(f"💪 Оптимальна витрата енергії для гіпертрофії: {cal_density} ккал/хв ({calories} ккал). Сили збережено для максимального механічного натягу.")
+
+    # 2. HR Recovery Spread & CNS Fatigue Alert
+    hr_spread = max_hr - min_hr
+    if min_hr > 130 or (recovery_time_hours and recovery_time_hours > 48):
+        telemetry_notes_en.append(f"⚠️ High CNS strain / Elevated rest HR (Min: {min_hr} BPM, Watch Recovery: {recovery_time_hours or 'N/A'}h). Dial back intensity next session and prioritize lymphatic recovery.")
+        telemetry_notes_ua.append(f"⚠️ Сигнал втоми ЦНС / Високий пульс у відпочинку (Мін: {min_hr} уд/хв, Відновлення годинника: {recovery_time_hours or '—'} год). Знизьте навантаження наступного разу, зосередьтеся на сні та лімфодренажі.")
+    else:
+        telemetry_notes_en.append(f"❤️ Healthy HR Recovery Spread ({hr_spread} BPM swing). Heart rate recovered smoothly between sets.")
+        telemetry_notes_ua.append(f"❤️ Здоровий контраст пульсу (амплітуда {hr_spread} уд/хв). Серцевий ритм ефективно відновлювався у паузах.")
+
+    # 3. Zone 5 Spike vs Easy RPE
+    if max_hr >= int(user_max_hr * 0.90) and rpe <= 2:
+        telemetry_notes_en.append(f"⚡ Cardiovascular spike into Zone 5 ({max_hr} BPM) while muscular load felt light (RPE {rpe}). Increase rest between supersets by +20–30s so heart rate doesn't limit muscle recruitment.")
+        telemetry_notes_ua.append(f"⚡ Пульс підскочив у Зону 5 ({max_hr} уд/хв), хоча навантаження здавалося легким (RPE {rpe}). Додайте +20–30 сек відпочинку між суперсетами, щоб пульс не обмежував роботу м'язів.")
+
+    # 4. Watch Training Effect / Load note
+    if training_load:
+        if training_load >= 4.0:
+            telemetry_notes_en.append(f"🔋 High Watch Training Load ({training_load}/5.0). Optimal neuromuscular stimulus achieved.")
+            telemetry_notes_ua.append(f"🔋 Високе тренувальне навантаження за годинником ({training_load}/5.0). Досягнуто потужного стимулу.")
+        elif training_load <= 2.0:
+            telemetry_notes_en.append(f"🔋 Light/Moderate Watch Training Load ({training_load}/5.0). Good restorative maintenance.")
+            telemetry_notes_ua.append(f"🔋 Помірне тренувальне навантаження за годинником ({training_load}/5.0). Хороша відновлювальна підтримка.")
+
+    # Append telemetry notes to feedback if available
+    full_feedback_en = feedback_en
+    full_feedback_ua = feedback_ua
+    if telemetry_notes_en:
+        full_feedback_en += "\n\n⌚ Smartwatch Telemetry Insights:\n" + "\n".join(telemetry_notes_en)
+        full_feedback_ua += "\n\n⌚ Аналіз телеметрії смарт-годинника:\n" + "\n".join(telemetry_notes_ua)
+
     return {
         "status": "success",
         "avg_heart_rate": avg_hr_clamped,
@@ -491,12 +570,25 @@ def analyze_workout_heart_rate(
         "goal_achieved": goal_achieved,
         "status_title_en": status_en,
         "status_title_ua": status_ua,
-        "feedback_en": feedback_en,
-        "feedback_ua": feedback_ua,
+        "feedback_en": full_feedback_en,
+        "feedback_ua": full_feedback_ua,
         "physiological_case": physiological_case,
         "physio_title_en": physio_title_en,
         "physio_title_ua": physio_title_ua,
         "physio_advice_en": physio_advice_en,
         "physio_advice_ua": physio_advice_ua,
+        "telemetry_notes_en": telemetry_notes_en,
+        "telemetry_notes_ua": telemetry_notes_ua,
+        "caloric_density": cal_density,
+        "caloric_burn_rate": cal_density,
+        "hr_spread": hr_spread,
+        "hr_recovery_spread": hr_spread,
+        "watch_duration_minutes": watch_duration_minutes,
+        "active_calories": active_calories,
+        "total_calories": total_calories,
+        "training_load": training_load,
+        "watch_training_load": training_load,
+        "recovery_time_hours": recovery_time_hours,
+        "recommended_recovery_hours": recovery_time_hours,
         "all_zones": target_info["all_zones"]
     }

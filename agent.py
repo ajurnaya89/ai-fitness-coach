@@ -591,9 +591,16 @@ def log_workout_progress(
     duration_minutes: int,
     rating: int,
     fatigue: int,
-    notes: str = ""
+    notes: str = "",
+    min_heart_rate: Optional[int] = None,
+    max_heart_rate: Optional[int] = None,
+    avg_heart_rate: Optional[int] = None,
+    active_calories: Optional[int] = None,
+    total_calories: Optional[int] = None,
+    training_load: Optional[float] = None,
+    recovery_time_hours: Optional[int] = None
 ) -> Dict[str, Any]:
-    """Logs a finished workout session into the database, updating exercise performance history and cooldown memory.
+    """Logs a finished workout session with smartwatch telemetry into the database.
 
     Args:
         workout_id: The ID of the completed workout.
@@ -601,6 +608,13 @@ def log_workout_progress(
         rating: Subjective workout rating from 1 (poor) to 5 (excellent).
         fatigue: Fatigue level from 1 (fresh) to 5 (exhausted).
         notes: User reflection or coach notes.
+        min_heart_rate: Lowest resting BPM recorded.
+        max_heart_rate: Highest peak BPM recorded.
+        avg_heart_rate: Mean session BPM.
+        active_calories: Active energy burned from smartwatch.
+        total_calories: Total energy burned from smartwatch.
+        training_load: Watch Training Effect index (1.0 - 5.0).
+        recovery_time_hours: Watch recovery time advisor in hours.
 
     Returns:
         Confirmation status and updated history log ID.
@@ -612,6 +626,14 @@ def log_workout_progress(
         overall_rating=max(1, min(5, rating)),
         overall_fatigue=max(1, min(5, fatigue)),
         user_notes=notes,
+        min_heart_rate=min_heart_rate,
+        max_heart_rate=max_heart_rate,
+        avg_heart_rate=avg_heart_rate or min_heart_rate,
+        watch_duration_minutes=duration_minutes,
+        active_calories=active_calories,
+        total_calories=total_calories,
+        training_load=training_load,
+        recovery_time_hours=recovery_time_hours,
         exercise_logs=[]
     )
     database.save_completed_workout(log)

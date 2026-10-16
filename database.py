@@ -151,6 +151,18 @@ def init_db():
         ("hr_zone_achieved", "INTEGER DEFAULT 0"),
         ("hr_goal_achieved", "BOOLEAN DEFAULT 0"),
         ("hr_analysis_feedback", "TEXT DEFAULT ''"),
+        ("watch_duration_minutes", "INTEGER"),
+        ("active_calories", "INTEGER"),
+        ("total_calories", "INTEGER"),
+        ("zone1_mins", "INTEGER"),
+        ("zone2_mins", "INTEGER"),
+        ("zone3_mins", "INTEGER"),
+        ("zone4_mins", "INTEGER"),
+        ("zone5_mins", "INTEGER"),
+        ("dominant_zone", "INTEGER"),
+        ("training_load", "REAL"),
+        ("recovery_time_hours", "INTEGER"),
+        ("telemetry_analysis", "TEXT DEFAULT ''"),
     ]:
         try:
             cursor.execute(f"ALTER TABLE workout_sessions ADD COLUMN {col} {col_def}")
@@ -361,7 +373,10 @@ def get_user_profile() -> Dict:
 
 
 def save_user_profile(data: Dict) -> Dict:
-    """Updates user profile preferences."""
+    """Updates user profile preferences with safe merging to avoid clearing unspecified fields."""
+    current = get_user_profile()
+    merged = {**current, **data}
+
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -385,22 +400,22 @@ def save_user_profile(data: Dict) -> Dict:
         updated_at = ?
     WHERE id = 1
     """, (
-        data.get("sex", "female"),
-        data.get("level", "intermediate"),
-        data.get("location", "home"),
-        data.get("goal", "muscle_gain"),
-        float(data.get("current_weight", 75.0)),
-        float(data.get("target_weight", 72.0)),
-        data.get("weight_unit", "kg"),
-        json.dumps(data.get("equipment_inventory", [])),
-        json.dumps(data.get("injuries_to_avoid", [])),
-        json.dumps(data.get("medical_conditions", [])),
-        data.get("workout_format", "superset_pairs"),
-        data.get("trx_anchor", "door"),
-        int(data.get("age", 30)),
-        int(data.get("max_hr", 0)) if data.get("max_hr") else 0,
-        int(data.get("rolling_split_index", 0)),
-        1 if data.get("onboarding_completed") else 0,
+        merged.get("sex", "female"),
+        merged.get("level", "intermediate"),
+        merged.get("location", "home"),
+        merged.get("goal", "muscle_gain"),
+        float(merged.get("current_weight", 75.0)),
+        float(merged.get("target_weight", 72.0)),
+        merged.get("weight_unit", "kg"),
+        json.dumps(merged.get("equipment_inventory", [])),
+        json.dumps(merged.get("injuries_to_avoid", [])),
+        json.dumps(merged.get("medical_conditions", [])),
+        merged.get("workout_format", "superset_pairs"),
+        merged.get("trx_anchor", "door"),
+        int(merged.get("age", 30)),
+        int(merged.get("max_hr", 0)) if merged.get("max_hr") else 0,
+        int(merged.get("rolling_split_index", 0)),
+        1 if merged.get("onboarding_completed") else 0,
         datetime.now().isoformat()
     ))
     conn.commit()
@@ -477,8 +492,11 @@ def save_completed_workout(workout_log: CompletedWorkoutLog):
             workout_id, date_completed, duration_minutes,
             overall_rating, overall_fatigue, user_notes,
             min_heart_rate, max_heart_rate, avg_heart_rate,
-            hr_zone_achieved, hr_goal_achieved, hr_analysis_feedback
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            hr_zone_achieved, hr_goal_achieved, hr_analysis_feedback,
+            watch_duration_minutes, active_calories, total_calories,
+            zone1_mins, zone2_mins, zone3_mins, zone4_mins, zone5_mins,
+            dominant_zone, training_load, recovery_time_hours, telemetry_analysis
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             workout_log.workout_id,
             workout_log.date_completed,
@@ -491,7 +509,19 @@ def save_completed_workout(workout_log: CompletedWorkoutLog):
             workout_log.avg_heart_rate or workout_log.min_heart_rate,
             workout_log.hr_zone_achieved,
             1 if workout_log.hr_goal_achieved else 0,
-            workout_log.hr_analysis_feedback
+            workout_log.hr_analysis_feedback,
+            getattr(workout_log, "watch_duration_minutes", None),
+            getattr(workout_log, "active_calories", None),
+            getattr(workout_log, "total_calories", None),
+            getattr(workout_log, "zone1_mins", None),
+            getattr(workout_log, "zone2_mins", None),
+            getattr(workout_log, "zone3_mins", None),
+            getattr(workout_log, "zone4_mins", None),
+            getattr(workout_log, "zone5_mins", None),
+            getattr(workout_log, "dominant_zone", None),
+            getattr(workout_log, "training_load", None),
+            getattr(workout_log, "recovery_time_hours", None),
+            getattr(workout_log, "telemetry_analysis", "") or ""
         ))
 
         for elog in workout_log.exercise_logs:

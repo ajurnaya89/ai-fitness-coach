@@ -226,7 +226,7 @@ REHAB_EXERCISES = [
         execution_ua="Видих, випрямте руки вперед, опираючись скручуванню корпусу. Пауза 2с, вдих — поверніть до грудей.",
         form_tips_ua="Плечі та таз залишаються суворо паралельними передній стіні.",
         default_sets=2, default_reps="8-10 reps each side", rest_seconds=30,
-        joint_stress=["wrist"], location=["home", "gym"], trx_anchor="door", is_compound_combo=False,
+        joint_stress=[], location=["home", "gym"], trx_anchor="door", is_compound_combo=False,
         equipment_alternatives="Light resistance band anchored to door or cable machine",
         equipment_alternatives_ua="Легка гумова стрічка або кросовер",
         gender_priority=["female", "male"]

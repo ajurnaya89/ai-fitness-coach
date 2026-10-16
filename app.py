@@ -186,7 +186,27 @@ class FitnessAppHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == "/api/profile":
             updated_profile = database.save_user_profile(data)
-            self._send_json({"status": "ok", "profile": updated_profile})
+            # Reactively re-filter & regenerate active strength plan if restrictions or venue changed
+            if any(k in data for k in ["injuries_to_avoid", "medical_conditions", "location", "sex", "trx_anchor", "equipment_inventory"]):
+                new_5days = engine.generate_5day_program(
+                    force_new_cycle=False,
+                    sex=updated_profile.get("sex", "female"),
+                    level=updated_profile.get("level", "intermediate"),
+                    location=updated_profile.get("location", "home"),
+                    injuries_to_avoid=updated_profile.get("injuries_to_avoid", []),
+                    goal=updated_profile.get("goal", "muscle_gain"),
+                    current_weight=updated_profile.get("current_weight", 75.0),
+                    target_weight=updated_profile.get("target_weight", 72.0),
+                    workout_format=updated_profile.get("workout_format", "superset"),
+                    trx_anchor=updated_profile.get("trx_anchor", "door"),
+                    age=updated_profile.get("age", 30),
+                    custom_max_hr=updated_profile.get("max_hr"),
+                    equipment_inventory=updated_profile.get("equipment_inventory"),
+                    medical_conditions=updated_profile.get("medical_conditions")
+                )
+                ACTIVE_PLANS["strength"] = [p.to_dict() for p in new_5days]
+                save_cached_plans(ACTIVE_PLANS)
+            self._send_json({"status": "ok", "profile": updated_profile, "strength_plan": ACTIVE_PLANS.get("strength", [])})
 
         elif path == "/api/onboarding":
             data["onboarding_completed"] = 1
@@ -227,6 +247,8 @@ class FitnessAppHandler(http.server.SimpleHTTPRequestHandler):
             level = data.get("level", profile.get("level", "intermediate"))
             location = data.get("location", profile.get("location", "home"))
             injuries = data.get("injuries_to_avoid", profile.get("injuries_to_avoid", []))
+            meds = data.get("medical_conditions", profile.get("medical_conditions", []))
+            equip = data.get("equipment_inventory", profile.get("equipment_inventory", []))
             goal = data.get("goal", profile.get("goal", "muscle_gain"))
             current_weight = float(data.get("current_weight", profile.get("current_weight", 75.0)))
             target_weight = float(data.get("target_weight", profile.get("target_weight", 72.0)))
@@ -238,6 +260,7 @@ class FitnessAppHandler(http.server.SimpleHTTPRequestHandler):
 
             database.save_user_profile({
                 "sex": sex, "level": level, "location": location, "injuries_to_avoid": injuries,
+                "medical_conditions": meds, "equipment_inventory": equip,
                 "goal": goal, "current_weight": current_weight, "target_weight": target_weight,
                 "workout_format": workout_format, "trx_anchor": trx_anchor,
                 "age": age, "max_hr": custom_max_hr
@@ -257,8 +280,8 @@ class FitnessAppHandler(http.server.SimpleHTTPRequestHandler):
                 trx_anchor=trx_anchor,
                 age=age,
                 custom_max_hr=custom_max_hr,
-                equipment_inventory=profile.get("equipment_inventory"),
-                medical_conditions=profile.get("medical_conditions")
+                equipment_inventory=equip,
+                medical_conditions=meds
             )
             ACTIVE_PLANS["strength"] = [p.to_dict() for p in new_5days]
             if force_new_cycle:
@@ -439,12 +462,54 @@ class FitnessAppHandler(http.server.SimpleHTTPRequestHandler):
                 goal = data.get("goal") or profile.get("goal", "muscle_gain")
                 fmt_type = data.get("format_type") or profile.get("workout_format", "standard")
 
+                # Smartwatch Telemetry parameters
+                watch_duration = data.get("watch_duration_minutes")
+                if watch_duration:
+                    try: watch_duration = int(watch_duration)
+                    except: watch_duration = None
+
+                active_cals = data.get("active_calories")
+                if active_cals:
+                    try: active_cals = int(active_cals)
+                    except: active_cals = None
+
+                total_cals = data.get("total_calories")
+                if total_cals:
+                    try: total_cals = int(total_cals)
+                    except: total_cals = None
+
+                z1 = data.get("zone1_mins")
+                z2 = data.get("zone2_mins")
+                z3 = data.get("zone3_mins")
+                z4 = data.get("zone4_mins")
+                z5 = data.get("zone5_mins")
+                try: z1 = float(z1) if z1 is not None else None
+                except: z1 = None
+                try: z2 = float(z2) if z2 is not None else None
+                except: z2 = None
+                try: z3 = float(z3) if z3 is not None else None
+                except: z3 = None
+                try: z4 = float(z4) if z4 is not None else None
+                except: z4 = None
+                try: z5 = float(z5) if z5 is not None else None
+                except: z5 = None
+
+                training_load = data.get("training_load")
+                if training_load:
+                    try: training_load = float(training_load)
+                    except: training_load = None
+
+                recovery_hours = data.get("recovery_time_hours")
+                if recovery_hours:
+                    try: recovery_hours = int(recovery_hours)
+                    except: recovery_hours = None
+
                 hr_analysis = None
                 hr_zone_achieved = 0
                 hr_goal_achieved = False
                 hr_analysis_feedback = ""
 
-                if (avg_hr and avg_hr > 0) or (min_hr and min_hr > 0) or (max_hr and max_hr > 0):
+                if (avg_hr and avg_hr > 0) or (min_hr and min_hr > 0) or (max_hr and max_hr > 0) or active_cals or any([z1, z2, z3, z4, z5]):
                     hr_analysis = heart_rate.analyze_workout_heart_rate(
                         avg_hr=avg_hr,
                         max_hr_recorded=max_hr,
@@ -454,11 +519,30 @@ class FitnessAppHandler(http.server.SimpleHTTPRequestHandler):
                         workout_format=fmt_type,
                         age=profile.get("age", 30),
                         custom_max_hr=profile.get("max_hr"),
-                        medical_conditions=profile.get("medical_conditions", [])
+                        medical_conditions=profile.get("medical_conditions", []),
+                        watch_duration_minutes=watch_duration,
+                        active_calories=active_cals,
+                        total_calories=total_cals,
+                        zone1_mins=z1,
+                        zone2_mins=z2,
+                        zone3_mins=z3,
+                        zone4_mins=z4,
+                        zone5_mins=z5,
+                        watch_training_load=training_load,
+                        recovery_time_hours=recovery_hours
                     )
                     hr_zone_achieved = hr_analysis["achieved_zone"]
                     hr_goal_achieved = hr_analysis["goal_achieved"]
                     hr_analysis_feedback = hr_analysis["feedback_en"]
+
+                dominant_zone = None
+                if hr_analysis and hr_analysis.get("dominant_zone"):
+                    dominant_zone = hr_analysis["dominant_zone"]
+                elif any(v is not None and v > 0 for v in [z1, z2, z3, z4, z5]):
+                    z_map = {"Zone 1": z1 or 0, "Zone 2": z2 or 0, "Zone 3": z3 or 0, "Zone 4": z4 or 0, "Zone 5": z5 or 0}
+                    dominant_zone = max(z_map, key=z_map.get)
+
+                telemetry_json = json.dumps(hr_analysis) if hr_analysis else None
 
                 exercise_logs = [
                     ExerciseFeedback(
@@ -486,6 +570,18 @@ class FitnessAppHandler(http.server.SimpleHTTPRequestHandler):
                     hr_zone_achieved=hr_zone_achieved,
                     hr_goal_achieved=hr_goal_achieved,
                     hr_analysis_feedback=hr_analysis_feedback,
+                    watch_duration_minutes=watch_duration,
+                    active_calories=active_cals,
+                    total_calories=total_cals,
+                    zone1_mins=z1,
+                    zone2_mins=z2,
+                    zone3_mins=z3,
+                    zone4_mins=z4,
+                    zone5_mins=z5,
+                    dominant_zone=dominant_zone,
+                    training_load=training_load,
+                    recovery_time_hours=recovery_hours,
+                    telemetry_analysis=telemetry_json,
                     exercise_logs=exercise_logs
                 )
                 database.save_completed_workout(log)
@@ -1093,6 +1189,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <button class="lang-btn" id="btn-lang-ua" onclick="setLanguage('ua')">UA</button>
         </div>
 
+        <!-- Smartwatch Bluetooth Sync -->
+        <button class="btn btn-secondary btn-sm" id="btn-watch-sync" onclick="connectSmartwatch()" title="Sync Web Bluetooth Heart Rate">⌚ <span id="btn-watch-text">Sync Watch</span></button>
+        <span id="watch-live-hr" class="badge" style="display:none; background:#ef4444; color:#fff; font-weight:700;">❤️ <span id="watch-bpm-val">--</span> BPM</span>
+
         <!-- Settings Button -->
         <button class="btn btn-secondary btn-sm" onclick="openOnboardingModal()" title="Settings & Questionnaire">⚙️ <span id="btn-settings-text">Settings</span></button>
       </div>
@@ -1175,10 +1275,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <!-- Exercise Cards List -->
       <div id="strength-exercise-list"></div>
 
-      <!-- Workout Completion Card -->
+      <!-- Workout Completion Card (Smartwatch Telemetry Hub) -->
       <div class="card" style="margin-top: 24px; border: 1px solid #1e40af; background: #0f172a;">
-        <h3 style="font-size: 16px; font-weight: 800; color: #93c5fd; margin-bottom: 12px;" id="complete-card-title">💾 Finish & Save Workout Session</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: #93c5fd;" id="complete-card-title">💾 Finish & Save Workout (Smartwatch Telemetry Hub)</h3>
+            <p style="font-size: 12px; color: var(--muted); margin-top: 2px;" id="telemetry-hint">Log your Apple Watch / Garmin / Polar telemetry or sync live via Bluetooth:</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="connectSmartwatch()" id="btn-card-sync">⌚ <span id="btn-card-sync-text">Live Bluetooth Sync</span></button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 14px;">
           <div class="input-group" style="flex-direction: column; align-items: flex-start;">
             <label id="lbl-dur">Duration (min)</label>
             <input type="number" id="session-duration" value="55" style="width: 100%;">
@@ -1196,6 +1303,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <input type="number" id="session-max-hr" placeholder="e.g. 165" style="width: 100%;">
           </div>
           <div class="input-group" style="flex-direction: column; align-items: flex-start;">
+            <label id="lbl-active-cals">Active Cals (kcal)</label>
+            <input type="number" id="session-active-cals" placeholder="e.g. 380" style="width: 100%;">
+          </div>
+          <div class="input-group" style="flex-direction: column; align-items: flex-start;">
+            <label id="lbl-total-cals">Total Cals (kcal)</label>
+            <input type="number" id="session-total-cals" placeholder="e.g. 460" style="width: 100%;">
+          </div>
+          <div class="input-group" style="flex-direction: column; align-items: flex-start;">
+            <label id="lbl-training-load">Watch Load (1-5)</label>
+            <input type="number" id="session-training-load" step="0.1" min="1.0" max="5.0" placeholder="e.g. 3.2" style="width: 100%;">
+          </div>
+          <div class="input-group" style="flex-direction: column; align-items: flex-start;">
+            <label id="lbl-recovery-hours">Recovery (hours)</label>
+            <input type="number" id="session-recovery-hours" placeholder="e.g. 24" style="width: 100%;">
+          </div>
+          <div class="input-group" style="flex-direction: column; align-items: flex-start;">
             <label id="lbl-rpe">RPE Difficulty (1-5)</label>
             <select id="session-rpe" style="width: 100%;">
               <option value="1">1 (Very Easy)</option>
@@ -1206,10 +1329,38 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </select>
           </div>
         </div>
-        <div style="margin-bottom: 14px;">
-          <textarea id="session-notes" placeholder="Notes (how did your muscles feel, weights used, etc.)..." style="width: 100%; height: 60px; background: #1e293b; border: 1px solid var(--border); border-radius: 6px; padding: 8px; color: #fff; font-size: 13px;"></textarea>
+
+        <!-- Heart Rate Zones Minutes Breakdown -->
+        <div style="margin-bottom: 14px; background: #090d16; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: #93c5fd; margin-bottom: 6px;" id="lbl-zones-breakdown">⏱️ Smartwatch HR Zones Breakdown (Minutes in each zone):</label>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px;">
+            <div>
+              <span style="font-size: 11px; color: #94a3b8; display: block;">Z1 Warmup</span>
+              <input type="number" id="session-z1" step="0.5" placeholder="0 min" style="width: 100%; padding: 5px; background: #1e293b; border: 1px solid var(--border); border-radius: 4px; color: #fff; font-size: 12px;">
+            </div>
+            <div>
+              <span style="font-size: 11px; color: #94a3b8; display: block;">Z2 Fat Burn</span>
+              <input type="number" id="session-z2" step="0.5" placeholder="0 min" style="width: 100%; padding: 5px; background: #1e293b; border: 1px solid var(--border); border-radius: 4px; color: #fff; font-size: 12px;">
+            </div>
+            <div>
+              <span style="font-size: 11px; color: #94a3b8; display: block;">Z3 Aerobic</span>
+              <input type="number" id="session-z3" step="0.5" placeholder="0 min" style="width: 100%; padding: 5px; background: #1e293b; border: 1px solid var(--border); border-radius: 4px; color: #fff; font-size: 12px;">
+            </div>
+            <div>
+              <span style="font-size: 11px; color: #94a3b8; display: block;">Z4 Threshold</span>
+              <input type="number" id="session-z4" step="0.5" placeholder="0 min" style="width: 100%; padding: 5px; background: #1e293b; border: 1px solid var(--border); border-radius: 4px; color: #fff; font-size: 12px;">
+            </div>
+            <div>
+              <span style="font-size: 11px; color: #94a3b8; display: block;">Z5 Anaerobic</span>
+              <input type="number" id="session-z5" step="0.5" placeholder="0 min" style="width: 100%; padding: 5px; background: #1e293b; border: 1px solid var(--border); border-radius: 4px; color: #fff; font-size: 12px;">
+            </div>
+          </div>
         </div>
-        <button class="btn btn-accent" style="width: 100%; justify-content: center;" onclick="submitStrengthSession()">✅ <span id="btn-save-session-text">Complete & Analyze Workout</span></button>
+
+        <div style="margin-bottom: 14px;">
+          <textarea id="session-notes" placeholder="Notes (how did your muscles feel, weights used, smartwatch feedback)..." style="width: 100%; height: 60px; background: #1e293b; border: 1px solid var(--border); border-radius: 6px; padding: 8px; color: #fff; font-size: 13px;"></textarea>
+        </div>
+        <button class="btn btn-accent" style="width: 100%; justify-content: center;" onclick="submitStrengthSession()">✅ <span id="btn-save-session-text">Complete & Analyze Telemetry</span></button>
       </div>
     </div>
 
@@ -1413,27 +1564,63 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div id="onb-gear-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px;"></div>
       </div>
 
-      <!-- Joint & Biomechanical Isolation -->
+      <!-- CATEGORY A: JOINT, SPINE & BIOMECHANICAL ISOLATION (12) -->
       <div style="margin-bottom: 16px;">
-        <label style="display: block; font-size: 12px; font-weight: 700; color: #f87171; margin-bottom: 6px;" id="lbl-onb-inj">JOINT ISOLATION (Strict Zero-Load Exclusions):</label>
+        <label style="display: block; font-size: 12px; font-weight: 700; color: #f87171; margin-bottom: 6px;" id="lbl-onb-cat-a">CATEGORY A: JOINT, SPINE & BIOMECHANICAL ISOLATION (Strict Zero-Load):</label>
         <div class="chips-group" id="onb-injury-chips">
-          <div class="chip" onclick="toggleOnbInjury('wrist', this)">🤲 <span class="chip-label" data-en="Wrist (Zero-Palm)" data-ua="Зап'ястя (без упору на долоні)">Wrist (Zero-Palm)</span></div>
-          <div class="chip" onclick="toggleOnbInjury('knee', this)">🦵 <span class="chip-label" data-en="Knee (Zero Shear)" data-ua="Коліна (без зсувного навантаження)">Knee (Zero Shear)</span></div>
-          <div class="chip" onclick="toggleOnbInjury('no_kneeling', this)">🚫 <span class="chip-label" data-en="No Kneeling (No All-Fours)" data-ua="Без опори на коліна">No Kneeling (No All-Fours)</span></div>
-          <div class="chip" onclick="toggleOnbInjury('lower_back', this)">🦴 <span class="chip-label" data-en="Lower Back / Hernia (No Axial)" data-ua="Поперек / Грижі (без осьового)">Lower Back / Hernia (No Axial)</span></div>
-          <div class="chip" onclick="toggleOnbInjury('shoulder', this)">💪 <span class="chip-label" data-en="Shoulder" data-ua="Плече">Shoulder</span></div>
-          <div class="chip" onclick="toggleOnbInjury('elbow', this)">⚡ <span class="chip-label" data-en="Elbow" data-ua="Лікоть">Elbow</span></div>
-          <div class="chip" onclick="toggleOnbInjury('ankle', this)">🦶 <span class="chip-label" data-en="Ankle" data-ua="Гомілковостоп">Ankle</span></div>
+          <div class="chip" id="chip-inj-wrist" onclick="toggleOnbInjury('wrist', this)">🤲 <span class="chip-label" data-en="Wrist (Zero-Palm)" data-ua="Зап'ястя (без упору на долоні)">Wrist (Zero-Palm)</span></div>
+          <div class="chip" id="chip-inj-knee" onclick="toggleOnbInjury('knee', this)">🦵 <span class="chip-label" data-en="Knee (Zero Shear)" data-ua="Коліна (без зсувного навантаження)">Knee (Zero Shear)</span></div>
+          <div class="chip" id="chip-inj-no_kneeling" onclick="toggleOnbInjury('no_kneeling', this)">🚫 <span class="chip-label" data-en="No Kneeling (No All-Fours)" data-ua="Без опори на коліна (без четвереньок)">No Kneeling (No All-Fours)</span></div>
+          <div class="chip" id="chip-inj-lower_back" onclick="toggleOnbInjury('lower_back', this)">🦴 <span class="chip-label" data-en="Lower Back / Hernia (No Axial)" data-ua="Поперек / Грижі (без осьового)">Lower Back / Hernia (No Axial)</span></div>
+          <div class="chip" id="chip-inj-hyperlordosis" onclick="toggleOnbInjury('hyperlordosis', this)">📐 <span class="chip-label" data-en="Hyperlordosis (Tuck Pelvis)" data-ua="Гіперлордоз (без прогину в попереку)">Hyperlordosis (Tuck Pelvis)</span></div>
+          <div class="chip" id="chip-inj-shoulder" onclick="toggleOnbInjury('shoulder', this)">💪 <span class="chip-label" data-en="Shoulder Impingement" data-ua="Плече / Імпіджмент">Shoulder Impingement</span></div>
+          <div class="chip" id="chip-inj-elbow" onclick="toggleOnbInjury('elbow', this)">⚡ <span class="chip-label" data-en="Elbow Tendonitis" data-ua="Лікоть (епікондиліт)">Elbow Tendonitis</span></div>
+          <div class="chip" id="chip-inj-ankle" onclick="toggleOnbInjury('ankle', this)">🦶 <span class="chip-label" data-en="Ankle Sprain / Mobility" data-ua="Гомілковостоп / Нестабільність">Ankle Sprain / Mobility</span></div>
+          <div class="chip" id="chip-inj-hip" onclick="toggleOnbInjury('hip', this)">🦴 <span class="chip-label" data-en="Hip Impingement / Labrum" data-ua="Кульшовий суглоб / Імпіджмент">Hip Impingement / Labrum</span></div>
+          <div class="chip" id="chip-inj-cervical_spine" onclick="toggleOnbInjury('cervical_spine', this)">🧘 <span class="chip-label" data-en="Neck / Cervical Spine Tension" data-ua="Шийний відділ хребта">Neck / Cervical Spine Tension</span></div>
+          <div class="chip" id="chip-inj-sciatica" onclick="toggleOnbInjury('sciatica', this)">⚡ <span class="chip-label" data-en="Sciatica / Piriformis Syndrome" data-ua="Сідничний нерв / Грушоподібний">Sciatica / Piriformis Syndrome</span></div>
+          <div class="chip" id="chip-inj-flat_feet" onclick="toggleOnbInjury('flat_feet', this)">🦶 <span class="chip-label" data-en="Flat Feet / Plantar Fasciitis" data-ua="Плоскостопість / Фасциїт">Flat Feet / Plantar Fasciitis</span></div>
         </div>
       </div>
 
-      <!-- Medical Conditions -->
+      <!-- CATEGORY B: FEMALE HEALTH & POSTURE (4) -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 12px; font-weight: 700; color: #f472b6; margin-bottom: 6px;" id="lbl-onb-cat-b">CATEGORY B: FEMALE HEALTH & POSTURE:</label>
+        <div class="chips-group" id="onb-cat-b-chips">
+          <div class="chip" id="chip-med-diastasis_pelvic_floor" onclick="toggleOnbMed('diastasis_pelvic_floor', this)">🌸 <span class="chip-label" data-en="Diastasis & Pelvic Floor Safe" data-ua="Діастаз та слабкість тазового дна">Diastasis & Pelvic Floor Safe</span></div>
+          <div class="chip" id="chip-med-pregnancy_safe" onclick="toggleOnbMed('pregnancy_safe', this)">🤰 <span class="chip-label" data-en="Pregnancy Safe Protocol" data-ua="Вагітність (безпечний протокол)">Pregnancy Safe Protocol</span></div>
+          <div class="chip" id="chip-med-postpartum" onclick="toggleOnbMed('postpartum', this)">👶 <span class="chip-label" data-en="Postpartum Recovery" data-ua="Післяпологове відновлення">Postpartum Recovery</span></div>
+          <div class="chip" id="chip-med-varicose_veins" onclick="toggleOnbMed('varicose_veins', this)">🩸 <span class="chip-label" data-en="Varicose Veins (Anti-Stagnation)" data-ua="Варикоз (без тривалого стояння)">Varicose Veins (Anti-Stagnation)</span></div>
+        </div>
+      </div>
+
+      <!-- CATEGORY C: CARDIOVASCULAR & HEMODYNAMIC (3) -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 12px; font-weight: 700; color: #fb7185; margin-bottom: 6px;" id="lbl-onb-cat-c">CATEGORY C: CARDIOVASCULAR & HEMODYNAMIC:</label>
+        <div class="chips-group" id="onb-cat-c-chips">
+          <div class="chip" id="chip-med-hypertension" onclick="toggleOnbMed('hypertension', this)">🫀 <span class="chip-label" data-en="Hypertension (No Inversions/Valsalva)" data-ua="Гіпертонія (без натужування)">Hypertension (No Inversions/Valsalva)</span></div>
+          <div class="chip" id="chip-med-hypotension" onclick="toggleOnbMed('hypotension', this)">📉 <span class="chip-label" data-en="Hypotension (Slow Level Shifts)" data-ua="Гіпотонія (повільна зміна рівнів)">Hypotension (Slow Level Shifts)</span></div>
+          <div class="chip" id="chip-med-arrhythmia_tachycardia" onclick="toggleOnbMed('arrhythmia_tachycardia', this)">💓 <span class="chip-label" data-en="Arrhythmia / Tachycardia (Zone 1-2 Cap)" data-ua="Аритмія / Тахікардія (ліміт Зони 1-2)">Arrhythmia / Tachycardia (Zone 1-2 Cap)</span></div>
+        </div>
+      </div>
+
+      <!-- CATEGORY D: ENDOCRINE, METABOLIC & RECOVERY (4) -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 12px; font-weight: 700; color: #c084fc; margin-bottom: 6px;" id="lbl-onb-cat-d">CATEGORY D: ENDOCRINE, METABOLIC & RECOVERY:</label>
+        <div class="chips-group" id="onb-cat-d-chips">
+          <div class="chip" id="chip-med-thyroid" onclick="toggleOnbMed('thyroid', this)">🦋 <span class="chip-label" data-en="Thyroid / Hypothyroidism (Anti-Cortisol)" data-ua="Щитоподібна залоза (протикортизоловий захист)">Thyroid / Hypothyroidism (Anti-Cortisol)</span></div>
+          <div class="chip" id="chip-med-adrenal_fatigue" onclick="toggleOnbMed('adrenal_fatigue', this)">🔋 <span class="chip-label" data-en="Adrenal Fatigue (Extended Rest 90s+)" data-ua="Втома наднирників (відпочинок 90с+)">Adrenal Fatigue (Extended Rest 90s+)</span></div>
+          <div class="chip" id="chip-med-type2_diabetes" onclick="toggleOnbMed('type2_diabetes', this)">🩺 <span class="chip-label" data-en="Type 2 Diabetes (Insulin Sensitivity)" data-ua="Діабет 2 типу (інсуліночутливість)">Type 2 Diabetes (Insulin Sensitivity)</span></div>
+          <div class="chip" id="chip-med-edema" onclick="toggleOnbMed('edema', this)">💧 <span class="chip-label" data-en="Edema / Lymphatic Drainage" data-ua="Схильність до набряків / Лімфодренаж">Edema / Lymphatic Drainage</span></div>
+        </div>
+      </div>
+
+      <!-- CATEGORY E: RESPIRATORY & GASTROINTESTINAL (2) -->
       <div style="margin-bottom: 20px;">
-        <label style="display: block; font-size: 12px; font-weight: 700; color: #c084fc; margin-bottom: 6px;" id="lbl-onb-med">SPECIAL & FEMALE MEDICAL CONDITIONS:</label>
-        <div class="chips-group" id="onb-med-chips">
-          <div class="chip" onclick="toggleOnbMed('diastasis_pelvic_floor', this)">🌸 <span class="chip-label" data-en="Diastasis & Pelvic Floor Safe" data-ua="Діастаз та тазове дно">Diastasis & Pelvic Floor Safe</span></div>
-          <div class="chip" onclick="toggleOnbMed('thyroid', this)">🦋 <span class="chip-label" data-en="Thyroid / Hypothyroidism Care" data-ua="Щитоподібна залоза (без кортизолу)">Thyroid / Hypothyroidism Care</span></div>
-          <div class="chip" onclick="toggleOnbMed('edema', this)">💧 <span class="chip-label" data-en="Edema / Lymphatic Drainage" data-ua="Набряки / Лімфодренаж">Edema / Lymphatic Drainage</span></div>
+        <label style="display: block; font-size: 12px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;" id="lbl-onb-cat-e">CATEGORY E: RESPIRATORY & GASTROINTESTINAL:</label>
+        <div class="chips-group" id="onb-cat-e-chips">
+          <div class="chip" id="chip-med-asthma" onclick="toggleOnbMed('asthma', this)">🫁 <span class="chip-label" data-en="Asthma Care (Controlled Cadence)" data-ua="Астма (контроль каденсу та дихання)">Asthma Care (Controlled Cadence)</span></div>
+          <div class="chip" id="chip-med-gerd" onclick="toggleOnbMed('gerd', this)">🔥 <span class="chip-label" data-en="GERD / Reflux (No Inversions/Flat Supine)" data-ua="ГЕРХ / Рефлюкс (без перевертання)">GERD / Reflux (No Inversions/Flat Supine)</span></div>
         </div>
       </div>
 
@@ -1593,7 +1780,49 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         next_day_prefix: "Next Day (Day ",
         start_cycle: "🎉 Start Next 5-Day Cycle 🚀",
         toast_cycle_started: "🎉 New 5-Day Cycle Generated! Fresh exercises loaded.",
-        toast_saved: "✓ Workout session saved successfully!"
+        toast_saved: "✓ Workout session saved successfully!",
+        // Onboarding Modal
+        onb_title: "📋 Athlete Profile & Biomechanics Setup",
+        onb_mode: "TRAINING PROFILE MODE:",
+        onb_female_btn: "👩 Female Sculpt (Glutes, Hips, Waist, Adductors)",
+        onb_male_btn: "👨 Male Hypertrophy (Chest, Back, Arms, Legs)",
+        onb_age: "Age",
+        onb_goal: "Primary Goal",
+        onb_goal_mg: "Muscle Gain / Hypertrophy",
+        onb_goal_ton: "Toning & Sculpt",
+        onb_goal_wl: "Weight Loss / Fat Burn",
+        onb_goal_str: "Maximum Strength",
+        onb_cw: "Current Weight (kg)",
+        onb_tw: "Target Weight (kg)",
+        onb_loc: "Primary Location",
+        onb_loc_home: "Home",
+        onb_loc_gym: "Commercial Gym",
+        onb_trx: "TRX Mounting Point",
+        onb_trx_door: "Door Anchor (Strict Zero-Overhead)",
+        onb_trx_bar: "Pull-Up Bar / 360° Mount",
+        onb_gear: "AVAILABLE GEAR (HOME INVENTORY):",
+        onb_cat_a: "CATEGORY A: JOINT, SPINE & BIOMECHANICAL ISOLATION (Strict Zero-Load):",
+        onb_cat_b: "CATEGORY B: FEMALE HEALTH & POSTURE:",
+        onb_cat_c: "CATEGORY C: CARDIOVASCULAR & HEMODYNAMIC:",
+        onb_cat_d: "CATEGORY D: ENDOCRINE, METABOLIC & RECOVERY:",
+        onb_cat_e: "CATEGORY E: RESPIRATORY & GASTROINTESTINAL:",
+        onb_save_btn: "💾 Save Profile & Generate Workouts",
+        // Smartwatch Hub & Completion
+        sync_watch: "Sync Watch",
+        live_sync: "Live Bluetooth Sync",
+        complete_title: "💾 Finish & Save Workout (Smartwatch Telemetry Hub)",
+        telemetry_hint: "Log your Apple Watch / Garmin / Polar telemetry or sync live via Bluetooth:",
+        lbl_dur: "Duration (min)",
+        lbl_min_hr: "Min HR (BPM)",
+        lbl_avg_hr: "Avg HR (BPM)",
+        lbl_max_hr: "Max HR (BPM)",
+        lbl_active_cals: "Active Cals (kcal)",
+        lbl_total_cals: "Total Cals (kcal)",
+        lbl_training_load: "Watch Load (1-5)",
+        lbl_recovery_hours: "Recovery (hours)",
+        lbl_rpe: "RPE Difficulty (1-5)",
+        lbl_zones_breakdown: "⏱️ Smartwatch HR Zones Breakdown (Minutes in each zone):",
+        save_session_btn: "Complete & Analyze Telemetry"
       },
       ua: {
         app_title: "AI Fitness Coach",
@@ -1620,9 +1849,131 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         next_day_prefix: "Наступний день (День ",
         start_cycle: "🎉 Почати новий 5-денний цикл 🚀",
         toast_cycle_started: "🎉 Новий 5-денний цикл згенеровано! Свіжі вправи завантажено.",
-        toast_saved: "✓ Тренування успішно збережено в базі!"
+        toast_saved: "✓ Тренування успішно збережено в базі!",
+        // Onboarding Modal
+        onb_title: "📋 Профіль атлета та біомеханічні налаштування",
+        onb_mode: "РЕЖИМ ПРОФІЛЮ ТРЕНУВАНЬ:",
+        onb_female_btn: "👩 Жіночий силует (Сідниці, Стегна, Талія, Привідні)",
+        onb_male_btn: "👨 Чоловіча гіпертрофія (Груди, Спина, Руки, Ноги)",
+        onb_age: "Вік",
+        onb_goal: "Основна мета",
+        onb_goal_mg: "Набір м'язів / Гіпертрофія",
+        onb_goal_ton: "Тонус та рельєф",
+        onb_goal_wl: "Схуднення / Жироспалювання",
+        onb_goal_str: "Максимальна сила",
+        onb_cw: "Поточна вага (кг)",
+        onb_tw: "Цільова вага (кг)",
+        onb_loc: "Локація тренувань",
+        onb_loc_home: "Вдома",
+        onb_loc_gym: "Фітнес-клуб",
+        onb_trx: "Точка кріплення TRX",
+        onb_trx_door: "Дверний якір (без навантаження над головою)",
+        onb_trx_bar: "Турнік / Стельове кріплення 360°",
+        onb_gear: "ДОСТУПНИЙ ІНВЕНТАР (ВДОМА):",
+        onb_cat_a: "КАТЕГОРІЯ A: СУГЛОБИ, ХРЕБЕТ ТА БІОМЕХАНІЧНА ІЗОЛЯЦІЯ (Без навантаження):",
+        onb_cat_b: "КАТЕГОРІЯ B: ЖІНОЧЕ ЗДОРОВ'Я ТА ПОСТАВА:",
+        onb_cat_c: "КАТЕГОРІЯ C: СЕРЦЕВО-СУДИННА СИСТЕМА ТА ТИСК:",
+        onb_cat_d: "КАТЕГОРІЯ D: ЕНДОКРИННА СИСТЕМА ТА ВІДНОВЛЕННЯ:",
+        onb_cat_e: "КАТЕГОРІЯ E: ДИХАЛЬНА ТА ТРАВНА СИСТЕМИ:",
+        onb_save_btn: "💾 Зберегти профіль та створити програму",
+        // Smartwatch Hub & Completion
+        sync_watch: "Синхр. годинник",
+        live_sync: "Bluetooth синхронізація",
+        complete_title: "💾 Завершити та зберегти (Телеметрія смарт-годинника)",
+        telemetry_hint: "Внесіть дані Apple Watch / Garmin / Polar або синхронізуйте по Bluetooth:",
+        lbl_dur: "Тривалість (хв)",
+        lbl_min_hr: "Мін Пульс (BPM)",
+        lbl_avg_hr: "Сер Пульс (BPM)",
+        lbl_max_hr: "Макс Пульс (BPM)",
+        lbl_active_cals: "Активні ккал",
+        lbl_total_cals: "Загальні ккал",
+        lbl_training_load: "Навантаження (1-5)",
+        lbl_recovery_hours: "Відновлення (год)",
+        lbl_rpe: "Складність RPE (1-5)",
+        lbl_zones_breakdown: "⏱️ Розподіл пульсових зон годинника (хвилини в кожній зоні):",
+        save_session_btn: "Завершити та проаналізувати телеметрію"
       }
     };
+
+    // -------------------------------------------------------------
+    // SMARTWATCH WEB BLUETOOTH INTEGRATION
+    // -------------------------------------------------------------
+    let bluetoothDevice = null;
+    let hrCharacteristic = null;
+    let liveBpmHistory = [];
+
+    async function connectSmartwatch() {
+      if (!navigator.bluetooth) {
+        alert(currentLang === "ua" ? "Web Bluetooth API не підтримується у вашому браузері. Будь ласка, використовуйте Chrome, Edge або Opera." : "Web Bluetooth API is not supported in this browser. Please use Chrome, Edge, or Opera.");
+        return;
+      }
+      try {
+        showToast(currentLang === "ua" ? "🔍 Пошук Bluetooth пульсометра / годинника..." : "🔍 Searching for Bluetooth heart rate monitor / watch...");
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: ['heart_rate'] }]
+        });
+        bluetoothDevice = device;
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('heart_rate');
+        hrCharacteristic = await service.getCharacteristic('heart_rate_measurement');
+        await hrCharacteristic.startNotifications();
+        hrCharacteristic.addEventListener('characteristicvaluechanged', handleHeartRateNotification);
+
+        const liveHrBadge = document.getElementById("watch-live-hr");
+        if (liveHrBadge) liveHrBadge.style.display = "inline-flex";
+
+        const syncBtn = document.getElementById("btn-watch-sync");
+        if (syncBtn) {
+          syncBtn.classList.remove("btn-secondary");
+          syncBtn.classList.add("btn-accent");
+          syncBtn.innerHTML = `⌚ <span>${device.name || 'Connected'}</span>`;
+        }
+
+        const cardSyncBtn = document.getElementById("btn-card-sync");
+        if (cardSyncBtn) {
+          cardSyncBtn.classList.remove("btn-secondary");
+          cardSyncBtn.classList.add("btn-accent");
+          cardSyncBtn.innerHTML = `⌚ <span>${device.name || 'Connected'}</span>`;
+        }
+
+        showToast(currentLang === "ua" ? `✓ Підключено: ${device.name || 'Смарт-годинник'}` : `✓ Connected to: ${device.name || 'Smartwatch'}`);
+      } catch (err) {
+        console.error("Bluetooth connection error:", err);
+        showToast(currentLang === "ua" ? "Bluetooth: " + err.message : "Bluetooth: " + err.message);
+      }
+    }
+
+    function handleHeartRateNotification(event) {
+      const value = event.target.value;
+      const flags = value.getUint8(0);
+      const is16Bit = (flags & 0x01) === 0x01;
+      let bpm = 0;
+      if (is16Bit) {
+        bpm = value.getUint16(1, true);
+      } else {
+        bpm = value.getUint8(1);
+      }
+      if (bpm > 35 && bpm < 240) {
+        liveBpmHistory.push(bpm);
+        const bpmEl = document.getElementById("watch-bpm-val");
+        if (bpmEl) bpmEl.textContent = bpm;
+
+        const minVal = Math.min(...liveBpmHistory);
+        const maxVal = Math.max(...liveBpmHistory);
+        const avgVal = Math.round(liveBpmHistory.reduce((a, b) => a + b, 0) / liveBpmHistory.length);
+
+        const minInput = document.getElementById("session-min-hr");
+        const avgInput = document.getElementById("session-avg-hr");
+        const maxInput = document.getElementById("session-max-hr");
+        if (minInput && !minInput.value) minInput.value = minVal;
+        else if (minInput && minVal < parseInt(minInput.value)) minInput.value = minVal;
+
+        if (avgInput) avgInput.value = avgVal;
+
+        if (maxInput && !maxInput.value) maxInput.value = maxVal;
+        else if (maxInput && maxVal > parseInt(maxInput.value)) maxInput.value = maxVal;
+      }
+    }
 
     function setLanguage(lang) {
       currentLang = lang;
@@ -1641,6 +1992,97 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById("btn-regen-text").textContent = t.regen;
       document.getElementById("btn-focus-text").textContent = t.focus_btn;
 
+      // Smartwatch Hub & Completion Card
+      const btnWatch = document.getElementById("btn-watch-text");
+      if (btnWatch) btnWatch.textContent = t.sync_watch;
+      const btnCardSync = document.getElementById("btn-card-sync-text");
+      if (btnCardSync) btnCardSync.textContent = t.live_sync;
+      const compCardTitle = document.getElementById("complete-card-title");
+      if (compCardTitle) compCardTitle.textContent = t.complete_title;
+      const telemHint = document.getElementById("telemetry-hint");
+      if (telemHint) telemHint.textContent = t.telemetry_hint;
+      const lblDur = document.getElementById("lbl-dur");
+      if (lblDur) lblDur.textContent = t.lbl_dur;
+      const lblMinHr = document.getElementById("lbl-min-hr");
+      if (lblMinHr) lblMinHr.textContent = t.lbl_min_hr;
+      const lblAvgHr = document.getElementById("lbl-avg-hr");
+      if (lblAvgHr) lblAvgHr.textContent = t.lbl_avg_hr;
+      const lblMaxHr = document.getElementById("lbl-max-hr");
+      if (lblMaxHr) lblMaxHr.textContent = t.lbl_max_hr;
+      const lblActCals = document.getElementById("lbl-active-cals");
+      if (lblActCals) lblActCals.textContent = t.lbl_active_cals;
+      const lblTotCals = document.getElementById("lbl-total-cals");
+      if (lblTotCals) lblTotCals.textContent = t.lbl_total_cals;
+      const lblTrLoad = document.getElementById("lbl-training-load");
+      if (lblTrLoad) lblTrLoad.textContent = t.lbl_training_load;
+      const lblRecHrs = document.getElementById("lbl-recovery-hours");
+      if (lblRecHrs) lblRecHrs.textContent = t.lbl_recovery_hours;
+      const lblRpe = document.getElementById("lbl-rpe");
+      if (lblRpe) lblRpe.textContent = t.lbl_rpe;
+      const lblZBreakdown = document.getElementById("lbl-zones-breakdown");
+      if (lblZBreakdown) lblZBreakdown.textContent = t.lbl_zones_breakdown;
+      const btnSaveSess = document.getElementById("btn-save-session-text");
+      if (btnSaveSess) btnSaveSess.textContent = t.save_session_btn;
+
+      // Onboarding & Profile Table Modal
+      const modalOnbTitle = document.getElementById("modal-onb-title");
+      if (modalOnbTitle) modalOnbTitle.textContent = t.onb_title;
+      const lblOnbMode = document.getElementById("lbl-onb-mode");
+      if (lblOnbMode) lblOnbMode.textContent = t.onb_mode;
+      const onbSexFem = document.getElementById("onb-sex-female");
+      if (onbSexFem) onbSexFem.textContent = t.onb_female_btn;
+      const onbSexM = document.getElementById("onb-sex-male");
+      if (onbSexM) onbSexM.textContent = t.onb_male_btn;
+      const lblOnbAge = document.getElementById("lbl-onb-age");
+      if (lblOnbAge) lblOnbAge.textContent = t.onb_age;
+      const lblOnbGoal = document.getElementById("lbl-onb-goal");
+      if (lblOnbGoal) lblOnbGoal.textContent = t.onb_goal;
+
+      const gSelect = document.getElementById("onb-goal");
+      if (gSelect && gSelect.options.length >= 4) {
+        gSelect.options[0].text = t.onb_goal_mg;
+        gSelect.options[1].text = t.onb_goal_ton;
+        gSelect.options[2].text = t.onb_goal_wl;
+        gSelect.options[3].text = t.onb_goal_str;
+      }
+
+      const lblOnbCw = document.getElementById("lbl-onb-cw");
+      if (lblOnbCw) lblOnbCw.textContent = t.onb_cw;
+      const lblOnbTw = document.getElementById("lbl-onb-tw");
+      if (lblOnbTw) lblOnbTw.textContent = t.onb_tw;
+      const lblOnbLoc = document.getElementById("lbl-onb-loc");
+      if (lblOnbLoc) lblOnbLoc.textContent = t.onb_loc;
+
+      const lSelect = document.getElementById("onb-loc");
+      if (lSelect && lSelect.options.length >= 2) {
+        lSelect.options[0].text = t.onb_loc_home;
+        lSelect.options[1].text = t.onb_loc_gym;
+      }
+
+      const lblOnbTrx = document.getElementById("lbl-onb-trx");
+      if (lblOnbTrx) lblOnbTrx.textContent = t.onb_trx;
+
+      const trxSelect = document.getElementById("onb-trx");
+      if (trxSelect && trxSelect.options.length >= 2) {
+        trxSelect.options[0].text = t.onb_trx_door;
+        trxSelect.options[1].text = t.onb_trx_bar;
+      }
+
+      const lblOnbGear = document.getElementById("lbl-onb-gear");
+      if (lblOnbGear) lblOnbGear.textContent = t.onb_gear;
+      const lblCatA = document.getElementById("lbl-onb-cat-a");
+      if (lblCatA) lblCatA.textContent = t.onb_cat_a;
+      const lblCatB = document.getElementById("lbl-onb-cat-b");
+      if (lblCatB) lblCatB.textContent = t.onb_cat_b;
+      const lblCatC = document.getElementById("lbl-onb-cat-c");
+      if (lblCatC) lblCatC.textContent = t.onb_cat_c;
+      const lblCatD = document.getElementById("lbl-onb-cat-d");
+      if (lblCatD) lblCatD.textContent = t.onb_cat_d;
+      const lblCatE = document.getElementById("lbl-onb-cat-e");
+      if (lblCatE) lblCatE.textContent = t.onb_cat_e;
+      const btnSaveOnb = document.getElementById("btn-save-onb-text");
+      if (btnSaveOnb) btnSaveOnb.textContent = t.onb_save_btn;
+
       // Update chip labels
       document.querySelectorAll(".chip-label").forEach(el => {
         el.textContent = lang === "ua" ? el.getAttribute("data-ua") : el.getAttribute("data-en");
@@ -1652,10 +2094,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         if (p) p.textContent = lang === "ua" ? `День ${i}` : `Day ${i}`;
       }
 
+      // Re-render gear checklist with translated gear names
+      renderGearChecklist();
+
       // Re-render current active view
       if (activeTab === "workout") renderStrengthDay();
       else if (activeTab === "mobility") renderMobilityRoutine();
       else if (activeTab === "rehab") renderRehabRoutine();
+      else if (activeTab === "progress") loadProgressStats();
     }
 
     // -------------------------------------------------------------
@@ -2172,6 +2618,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const minHr = document.getElementById("session-min-hr").value;
       const avgHr = document.getElementById("session-avg-hr").value;
       const maxHr = document.getElementById("session-max-hr").value;
+      const activeCals = document.getElementById("session-active-cals") ? document.getElementById("session-active-cals").value : null;
+      const totalCals = document.getElementById("session-total-cals") ? document.getElementById("session-total-cals").value : null;
+      const trainingLoad = document.getElementById("session-training-load") ? document.getElementById("session-training-load").value : null;
+      const recoveryHours = document.getElementById("session-recovery-hours") ? document.getElementById("session-recovery-hours").value : null;
+      const z1 = document.getElementById("session-z1") ? document.getElementById("session-z1").value : null;
+      const z2 = document.getElementById("session-z2") ? document.getElementById("session-z2").value : null;
+      const z3 = document.getElementById("session-z3") ? document.getElementById("session-z3").value : null;
+      const z4 = document.getElementById("session-z4") ? document.getElementById("session-z4").value : null;
+      const z5 = document.getElementById("session-z5") ? document.getElementById("session-z5").value : null;
       const rpe = parseInt(document.getElementById("session-rpe").value) || 3;
       const notes = document.getElementById("session-notes").value;
 
@@ -2197,9 +2652,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           body: JSON.stringify({
             workout_id: day.workout_id,
             duration_minutes: duration,
+            watch_duration_minutes: duration,
             min_heart_rate: minHr ? parseInt(minHr) : null,
             avg_heart_rate: avgHr ? parseInt(avgHr) : null,
             max_heart_rate: maxHr ? parseInt(maxHr) : null,
+            active_calories: activeCals ? parseInt(activeCals) : null,
+            total_calories: totalCals ? parseInt(totalCals) : null,
+            training_load: trainingLoad ? parseFloat(trainingLoad) : null,
+            recovery_time_hours: recoveryHours ? parseInt(recoveryHours) : null,
+            zone1_mins: z1 ? parseFloat(z1) : null,
+            zone2_mins: z2 ? parseFloat(z2) : null,
+            zone3_mins: z3 ? parseFloat(z3) : null,
+            zone4_mins: z4 ? parseFloat(z4) : null,
+            zone5_mins: z5 ? parseFloat(z5) : null,
             perceived_difficulty: rpe,
             overall_rating: 4,
             overall_fatigue: rpe,
@@ -2251,9 +2716,28 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const adviceTitle = currentLang === "ua" ? (analysis.physio_title_ua || analysis.physio_title_en) : analysis.physio_title_en;
       const advice = currentLang === "ua" ? (analysis.physio_advice_ua || analysis.physio_advice_en) : analysis.physio_advice_en;
 
+      let telemetryHtml = "";
+      if (analysis.caloric_burn_rate || analysis.hr_recovery_spread || analysis.zone_distribution_analysis || analysis.watch_training_load || analysis.recommended_recovery_hours) {
+        telemetryHtml = `
+          <div style="margin: 14px 0; background: #090d16; padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-size: 13px; font-weight: 800; color: #38bdf8; margin-bottom: 8px;">⌚ ${currentLang === 'ua' ? 'Біометричні показники смарт-годинника' : 'Smartwatch Biometric Telemetry'}</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 8px;">
+              ${analysis.caloric_burn_rate ? `<div style="background:#1e293b; padding:8px; border-radius:6px;"><div style="font-size:11px; color:#94a3b8;">${currentLang === 'ua' ? 'Горіння калорій' : 'Burn Rate'}</div><div style="font-size:14px; font-weight:800; color:#f59e0b;">🔥 ${analysis.caloric_burn_rate} kcal/min</div></div>` : ""}
+              ${analysis.hr_recovery_spread ? `<div style="background:#1e293b; padding:8px; border-radius:6px;"><div style="font-size:11px; color:#94a3b8;">${currentLang === 'ua' ? 'HR Відновлення' : 'HR Spread'}</div><div style="font-size:14px; font-weight:800; color:#10b981;">📉 ${analysis.hr_recovery_spread} BPM drop</div></div>` : ""}
+              ${analysis.watch_training_load ? `<div style="background:#1e293b; padding:8px; border-radius:6px;"><div style="font-size:11px; color:#94a3b8;">${currentLang === 'ua' ? 'Навантаження' : 'Training Load'}</div><div style="font-size:14px; font-weight:800; color:#a855f7;">⚡ ${analysis.watch_training_load} / 5.0</div></div>` : ""}
+              ${analysis.recommended_recovery_hours ? `<div style="background:#1e293b; padding:8px; border-radius:6px;"><div style="font-size:11px; color:#94a3b8;">${currentLang === 'ua' ? 'Відпочинок' : 'Recovery Needed'}</div><div style="font-size:14px; font-weight:800; color:#38bdf8;">⏱️ ${analysis.recommended_recovery_hours} hrs</div></div>` : ""}
+            </div>
+            ${analysis.calorie_density_assessment ? `<div style="font-size:12px; color:#cbd5e1; margin-bottom:4px;"><strong>${currentLang === 'ua' ? 'Оцінка калорійності:' : 'Caloric Density:'}</strong> ${analysis.calorie_density_assessment}</div>` : ""}
+            ${analysis.hr_recovery_assessment ? `<div style="font-size:12px; color:#cbd5e1; margin-bottom:4px;"><strong>${currentLang === 'ua' ? 'Вагусний тонус:' : 'Vagal Tone:'}</strong> ${analysis.hr_recovery_assessment}</div>` : ""}
+            ${analysis.zone_distribution_analysis ? `<div style="font-size:12px; color:#cbd5e1;"><strong>${currentLang === 'ua' ? 'Розподіл зон:' : 'Zone Distribution:'}</strong> ${analysis.zone_distribution_analysis}</div>` : ""}
+          </div>
+        `;
+      }
+
       b.innerHTML = `
         <div style="font-size: 18px; font-weight: 800; color: #38bdf8; margin-bottom: 8px;">${title}</div>
         <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 14px; line-height: 1.6;">${feedback}</div>
+        ${telemetryHtml}
         ${advice ? `
           <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; padding: 10px 12px; border-radius: 6px;">
             <div style="font-size: 13px; font-weight: 800; color: #fde047; margin-bottom: 4px;">${adviceTitle}</div>
@@ -2490,6 +2974,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       setOnboardingSex(userProfile.sex || "female");
       renderGearChecklist();
+
+      // Initialize onbInjuries and onbMeds from profile
+      onbInjuries = Array.from(userProfile.injuries_to_avoid || []);
+      onbMeds = Array.from(userProfile.medical_conditions || []);
+
+      // Synchronize visual active state of all 25 chips
+      document.querySelectorAll("#onb-injury-chips .chip").forEach(el => {
+        const id = el.id.replace("chip-inj-", "");
+        el.classList.toggle("active", onbInjuries.includes(id));
+      });
+
+      ["onb-cat-b-chips", "onb-cat-c-chips", "onb-cat-d-chips", "onb-cat-e-chips"].forEach(catId => {
+        const catContainer = document.getElementById(catId);
+        if (catContainer) {
+          catContainer.querySelectorAll(".chip").forEach(el => {
+            const id = el.id.replace("chip-med-", "");
+            el.classList.toggle("active", onbMeds.includes(id));
+          });
+        }
+      });
+
       document.getElementById("onboarding-modal").classList.add("open");
     }
 
@@ -2526,7 +3031,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       });
     }
 
-    function toggleOnbInjury(joint, el) {
+    async function toggleOnbInjury(joint, el) {
       if (onbInjuries.includes(joint)) {
         onbInjuries = onbInjuries.filter(x => x !== joint);
         el.classList.remove("active");
@@ -2534,15 +3039,37 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         onbInjuries.push(joint);
         el.classList.add("active");
       }
+      userProfile.injuries_to_avoid = onbInjuries;
+      try {
+        await fetch("/api/profile", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ injuries_to_avoid: onbInjuries })
+        });
+        await regenerateCurrentPlan();
+      } catch(e) {
+        console.error("Auto-sync injury error:", e);
+      }
     }
 
-    function toggleOnbMed(med, el) {
+    async function toggleOnbMed(med, el) {
       if (onbMeds.includes(med)) {
         onbMeds = onbMeds.filter(x => x !== med);
         el.classList.remove("active");
       } else {
         onbMeds.push(med);
         el.classList.add("active");
+      }
+      userProfile.medical_conditions = onbMeds;
+      try {
+        await fetch("/api/profile", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ medical_conditions: onbMeds })
+        });
+        await regenerateCurrentPlan();
+      } catch(e) {
+        console.error("Auto-sync medical condition error:", e);
       }
     }
 
@@ -2660,9 +3187,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <div style="font-weight: 700; color: #fff;">${w.date_completed} — ${w.duration_minutes} min</div>
                 <div style="font-size: 12px; color: var(--muted);">${w.user_notes || 'Workout completed'}</div>
               </div>
-              <div>
-                ${w.avg_heart_rate ? `<span class="badge" style="background:#1e3a8a; color:#bfdbfe;">${w.avg_heart_rate} BPM Avg</span>` : ""}
+              <div style="display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
+                ${w.active_calories ? `<span class="badge" style="background:#b45309; color:#fef3c7;">🔥 ${w.active_calories} kcal</span>` : (w.total_calories ? `<span class="badge" style="background:#b45309; color:#fef3c7;">🔥 ${w.total_calories} kcal</span>` : "")}
+                ${w.avg_heart_rate ? `<span class="badge" style="background:#1e3a8a; color:#bfdbfe;">❤️ ${w.avg_heart_rate} BPM</span>` : ""}
                 ${w.hr_zone_achieved ? `<span class="badge" style="background:#065f46; color:#a7f3d0;">Zone ${w.hr_zone_achieved}</span>` : ""}
+                ${w.training_load ? `<span class="badge" style="background:#581c87; color:#f3e8ff;">⚡ Load ${w.training_load}</span>` : ""}
+                ${w.recovery_time_hours ? `<span class="badge" style="background:#0f766e; color:#ccfbf1;">⏱️ ${w.recovery_time_hours}h rec</span>` : ""}
               </div>
             `;
             list.appendChild(row);

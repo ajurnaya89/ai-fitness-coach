@@ -141,6 +141,19 @@ class CompletedWorkoutLog:
     hr_zone_achieved: int = 0
     hr_goal_achieved: bool = False
     hr_analysis_feedback: str = ""
+    # Smartwatch Telemetry Hub fields
+    watch_duration_minutes: Optional[int] = None
+    active_calories: Optional[int] = None
+    total_calories: Optional[int] = None
+    zone1_mins: Optional[int] = None
+    zone2_mins: Optional[int] = None
+    zone3_mins: Optional[int] = None
+    zone4_mins: Optional[int] = None
+    zone5_mins: Optional[int] = None
+    dominant_zone: Optional[int] = None
+    training_load: Optional[float] = None
+    recovery_time_hours: Optional[int] = None
+    telemetry_analysis: str = ""
     exercise_logs: List[ExerciseFeedback] = field(default_factory=list)
 
     def to_dict(self):
