@@ -1,112 +1,216 @@
 # AI Personal Fitness Coach
 
-An intelligent, local personal training engine tailored for home and gym workouts with smart variety rotation, injury isolation, customizable focus builder, training level selection, and full bilingual support.
+An intelligent, local-first personal training and clinical restoration engine tailored for home and gym workouts. Engineered with a **5-Day Rolling Split**, **6 Clinical Rehabilitation Departments**, **Dynamic Joint Mobility**, **Biomechanical Guardrails & Hard Wrist Firewall**, **25 Health Conditions across 5 Categories**, **Smartwatch Telemetry Hub with Live Web Bluetooth Sync**, and a **Google Agent Development Kit (ADK) Multi-Agent Architecture** powered by Gemini.
 
 ---
 
-## Equipment Supported
-- **Home Gym**: Adjustable dumbbells, TRX suspension trainer, long & mini resistance bands, towels / sliders, small fitness ball, exercise stick, yoga blocks, bodyweight.
-- **Commercial Gym**: Barbells, squat racks, cable crossover towers, leg press, leg extension, lying hamstring curl, lat pulldowns, seated cable rows, smith machines, benches.
+## 🌟 Highlights & System Overview
+
+- **435 Total Exercises**:
+  - **340 Strength & Hypertrophy Catalog Exercises** (including **38 Compound Combo Hybrids**).
+  - **47 Dynamic Mobility Drills** across 6 anatomical kinetic checkpoints.
+  - **48 Clinical Rehabilitation Drills** across 6 specialized medical departments.
+- **100% Bilingual Support**: Complete Ukrainian (`UA`) and English (`EN`) localization for all 435 movements, including setup & stance cues, step-by-step execution, and pro tips.
+- **Biomechanical Guardrails & Hard Wrist Firewall**: Strict zero-palm load guarantee for wrist issues, zero axial load for lumbar hernias, zero shear load for knees, and diastasis recti safe mode.
+- **25 Onboarding Health Conditions across 5 Categories**: Joint isolation, female health, cardiovascular hemodynamic limits, endocrine/metabolic safety, and respiratory/gastrointestinal care.
+- **Smartwatch Telemetry Hub & Live Web Bluetooth Streaming**: Live BPM streaming from Bluetooth heart rate monitors (Apple Watch, Garmin, Polar, Whoop) directly in the browser via Web Bluetooth API, plus post-workout calorie, training load, and recovery tracking.
+- **5-Zone Heart Rate Physiology**: Automatic $HR_{max}$ calculation ($220 - \text{age}$ or custom lab value), target HR zone matching per workout format, and post-session coach feedback.
+- **Google ADK Hierarchical Architecture**: 7 specialized agents (`workout_planner`, `technique_coach`, `tabata_specialist`, `mobility_specialist`, `rehab_specialist`, `cardio_physiology_coach`, orchestrated by `root_agent`) and 17 custom ADK tools.
+- **Local-First & Private**: Powered by a local SQLite database (`data/fitness.db`) with zero external cloud dependencies for workout storage.
 
 ---
 
-## Key Features
+## 🏋️ Equipment & Venue Flexibility
 
-1. **Injury & Sore Area Isolation**:
-   - Isolate and safely exclude exercises stressing specific joints:
-     - ✋ **Wrist** (excludes floor palm push-ups/planks; provides forearm, neutral grip, or TRX alternatives).
-     - 🦵 **Knee** (excludes deep squats/lunges; provides hip hinge, glute bridge, upper body, and core alternatives).
-     - 🛡️ **Lower Back** (excludes heavy bent-over rows/deadlifts).
-     - 💪 **Shoulder** (excludes high-shear overhead work).
-     - 🦴 **Elbow** (excludes heavy tricep/bicep isolations).
-     - 🦶 **Ankle** (excludes jumping/high dorsiflexion).
-
-2. **Training Location (Home vs. Gym)**:
-   - **🏠 Home**: Uses home gym gear with creative angles and variable resistance.
-   - **🏋️ Gym**: Unlocks commercial gym barbells, cable machines, and isolation stations.
-
-3. **Training Goals & Weight Targets**:
-   - **⚡ Strength**: Lower rep ranges (5–8 reps) with extended rest (75–90s).
-   - **🏋️ Muscle Gain**: Hypertrophy focus (8–12 reps) with 60s rest.
-   - **🔥 Weight Loss**: High metabolic density (12–15 reps, 30–45s rest) with target weight delta calibration.
-   - **✨ Toning & Endurance**: High volume (15–20 reps) with continuous tempo (30s rest).
-   - **⚖️ Current & Target Weight Tracking**: Automatically calculates deficit/surplus focus.
-
-4. **Workout Methods & Interactive Tabata Counter**:
-   - **📋 Standard Sets**: Traditional sets with full prescribed rest.
-   - **🔁 Circuit Training**: 10 exercises performed back-to-back with 15s transition; 2–3 rounds total.
-   - **⏱️ Tabata Protocol & Interactive Dynamic Counter**:
-     - Dedicated interval timer featuring **40 seconds of exercise** followed by **10 seconds of rest**, repeated **8 times** per set.
-     - **1-minute rest between sets** (60s set recovery) with clear cycle and set counters.
-     - **Loud & dynamic countdown from 10 to the end**: Punchy rising audio tones and visual pulsing heartbeat in the final 10 seconds.
-     - **Voice Callouts**: Automatically speaks the name of each exercise out loud on start and previews upcoming movements during rest.
-     - Controls: Start / Pause, Interval Skip / Prev, Reset, Audio Effects Toggle (🔊), and Voice Callout Toggle (🗣️).
-   - **🥪 "Sandwich" Method (Pyramid Ladder)**: 10 exercises arranged in an ascending then descending pyramid:
-     `Ex 1 -> Ex 1+2 -> Ex 1+2+3 ... up to 1..10! Then descend: 2..10, 3..10 ... to Ex 10 alone.`
-
-5. **Advanced Compound Combo Hybrids (29 Combo Exercises)**:
-   - Dynamic compound movements for athletic variety and metabolic density:
-     - *Dumbbell Squat to Overhead Press (Thrusters)*
-     - *Dumbbell Goblet Squat to Bicep Curl*
-     - *Dumbbell Clean and Overhead Press*
-     - *Dumbbell Step-Up to Overhead Press*
-     - *Dumbbell Burpee to Overhead Press*
-     - *Dumbbell Renegade Row to Push-Up*
-     - *Dumbbell Romanian Deadlift to Upright Row*
-     - *Dumbbell Lunge to Hammer Curl*
-     - *Dumbbell Side Lunge to Overhead Press*
-     - *Dumbbell Sumo Squat to High Pull*
-     - *Dumbbell Push-Up to T-Spine Rotation*
-     - *TRX Atomic Push-Up (Push-Up to Knee Tuck)*
-     - *TRX Squat to Low Row Fluid Combo*
-     - *TRX Reverse Lunge to Y-Shoulder Flye*
-     - *TRX Single Leg Squat (Pistol) to High Row*
-     - *Glute Bridge Hold with Dumbbell Chest Press*
-     - *Slider Mountain Climber to Pike Combo*
-     - *Resistance Band Squat to Overhead Press*
-     - *And many more...*
-
-6. **TRX Anchor Alignment**:
-   - **🚪 Door Anchor**: Tailored for home doors (horizontal pulls, chest presses, bicep curls, door squats).
-   - **🏗️ Pull-Up Bar / 360° Mount**: Unlocks vertical pull-ups, inverted hangs, and suspended pikes.
-
-7. **Interactive Exercise Completion & Reps Tracking**:
-   - Inline **`[✓ Mark Completed]`** button on each exercise card.
-   - Real-time session progress bar (`X / 10 Completed`).
-   - Track actual weight loads and reps done for each exercise.
-
-8. **Progress & History Dashboard**:
-   - Summary cards: Total Workouts Completed, Exercises Finished, Average Rating, Weight Goal Target.
-   - History logs table with user notes, fatigue, dates, and cardiovascular telemetry (Average BPM, Zone badge, and Peak HR).
-
-9. **Cardiovascular Heart Rate Training Zones & Physiological Analysis**:
-   - **❤️ 5 Physiological Training Zones**: Automatically calibrated to user age ($HR_{max} = 220 - \text{age}$) or optional laboratory-measured $HR_{max}$:
-     - **Zone 1 (50%–60% $HR_{max}$)**: Active Recovery & Joint Restoration (prescribed for mobility routines).
-     - **Zone 2 (60%–70% $HR_{max}$)**: Optimal Lipid Oxidation / Fat Burning (prescribed for weight loss).
-     - **Zone 3 (70%–80% $HR_{max}$)**: Aerobic Tempo & Conditioning (prescribed for circuits and toning).
-     - **Zone 4 (80%–90% $HR_{max}$)**: Anaerobic Threshold / Hypertrophic Mechanical Tension (prescribed for muscle gain & strength).
-     - **Zone 5 (90%–100% $HR_{max}$)**: Peak Neuromuscular Power & Maximal Effort (prescribed for Tabata intervals).
-   - **🎯 Prescribed Workout Target HR**: Every generated session automatically displays its target HR zone and exact BPM range badge.
-   - **📊 Post-Workout Telemetry & Physiological Feedback**:
-     - Input your workout Average BPM and optional Peak BPM upon completion.
-     - Interactive modal compares achieved zone vs target zone with a visual 5-zone gauge.
-     - Provides instant coach evaluation in English and Ukrainian evaluating whether today's metabolic/hypertrophic goals were achieved.
-
-10. **Dynamic Joint Mobility & Restoration (10 Drills per Routine)**:
-   - **✨ General Full-Body Flow**: Balances 10 mobility drills across the body's kinetic checkpoints: Hips & Pelvis (2), Thoracic Spine & Back (2), Shoulders & Scapulae (2), Ankles & Calves (2), Wrists & Neck (1), Hamstrings & Posterior Chain (1).
-   - **🎯 Targeted Focus Routines**: Select specific zones (e.g. Hips, Thoracic Spine, Shoulders, Ankles, Wrists/Neck, Hamstrings) to generate a customized 10-drill joint restoration session.
-   - **Safe & Injury-Conscious**: Filters out floor-loaded wrist or knee shear movements if an injury is specified.
-   - 2 sets × 8–10 controlled reps per side or 45–60s active articulation with end-range pauses and breathing cues.
-
-11. **Expanded Library (193 Exercises including 31 Mobility Movements)**:
-   - Full bilingual support (English / Ukrainian).
-   - Step-by-step form guides (**Setup & Stance**, **Execution**, **Pro Tips / Common Mistakes**) for all 193 movements.
+| Venue | Equipment Supported |
+| :--- | :--- |
+| **🏠 Home Gym** | Adjustable dumbbells, TRX suspension trainer (Door Anchor & Pull-Up Bar Mount), mini resistance bands, long loop resistance bands, towels/sliders, small fitness ball, couch/bench support, yoga blocks, bodyweight. |
+| **🏋️ Commercial Gym** | Olympic barbells, squat racks, cable crossover towers, leg press, leg extension, lying hamstring curl, lat pulldown, seated cable rows, Smith machines, adjustable benches. |
 
 ---
 
-## How to Run the App
+## 🧩 Core Architecture & Key Capabilities
 
-1. Open your **Terminal** app on your Mac.
+### 1. 5-Day Rolling Split Architecture (~55–60 min / 10 Stations)
+Every standard workout consists of **exactly 10 exercises arranged as 5 Supersets × 2 Exercises** (A1/A2, B1/B2, C1/C2, D1/D2, E1/E2) to maximize density without accumulating central nervous system fatigue:
+- **Day 1: Shoulders + Biceps + Triceps + Core** (Deltoids sculpt, arm definition, wrist-safe deep core).
+- **Day 2: Back + Chest + Rear Delts + Core** (Scapular posture, chest expansion, posterior chain pull).
+- **Day 3: Dedicated Abs, Deep Core, Waist & Pelvic Stabilizers** (Transverse abdominis activation, zero abdominal doming, zero wrist strain).
+- **Day 4: Glutes + Hamstrings + "Hip Dips / Ушки" (Gluteus Medius) + Core** (Pelvic leveling, posterior chain hypertrophy, hip stability).
+- **Day 5: Quads + Inner Thighs (Adductors) + Calves & Ankle Pumps + Core** (Knee tracking, adductor tone, venous return lymphatic pumps).
+
+### 2. Specialized Targeted Mono-Workouts
+Dedicated full-session programs targeting specific goals:
+- **🍑 Special 13-Exercise Lower Body & Waist Sculpt** (13 high-density exercises for glutes, adductors, and waist tightening).
+- **🛡️ Pure Back & Scapular Posture** (10 exercises for thoracic extension and scapular retraction).
+- **🦵 Pure Glutes & Legs Hypertrophy** (10 exercises focusing on hip thrusts, RDLs, and quad strength).
+- **✨ Pure Core & Flat Stomach** (10 exercises for deep transverse abdominis and pelvic floor integration).
+- **🏛️ Classic 3-Day Foundation Program** (Backward-compatible Day 1: Quads/Chest/Abs, Day 2: Hamstrings/Back/Core, Day 3: Glutes/Shoulders/Core).
+
+### 3. ❤️‍🩹 Clinical Rehabilitation & Restoration (6 Dedicated Departments — 48 Drills)
+Vetted restorative movements (8 drills per department, 2 sets × 10–12 reps or 40–50s active holds) designed for injury rehabilitation, postpartum recovery, and posture correction:
+
+1. **🌸 Pelvic Floor & Diastasis Recti Recovery (`pelvic_floor_diastasis`)**:
+   - Transverse abdominis activation, pelvic floor reconnection, and safe intra-abdominal pressure regulation (strictly no crunches, sit-ups, or abdominal doming).
+2. **🦴 Hyperlordosis Correction & Lumbar Decompression (`lower_back_lordosis`)**:
+   - Lumbar decompression, posterior pelvic tilt patterning, glute bridge reinforcement, and psoas release without axial spinal compression.
+3. **🤲 Wrist & Carpal Tunnel Unloading (`wrists_elbows`)**:
+   - Strict zero-palm bodyweight bearing: median and ulnar nerve flossing, wrist extensor gliding, and forearm myofascial decompression.
+4. **🦵 Knee Joint & Hip Alignment (`knees_hips`)**:
+   - Patellofemoral tracking correction: Vastus Medialis Oblique (VMO) activation, gluteus medius pelvic leveling, and safe terminal knee extension.
+5. **🦶 Ankle Stability, Flat Feet & Anti-Edema Lymphatic Pump (`ankles_feet`)**:
+   - Short foot arch strengthening, ankle joint distraction, and calf muscle venous pumps for lymphatic return and reducing heavy legs.
+6. **🛡️ Cervical Spine & Scapular Stabilization (`neck_scapula`)**:
+   - Deep neck flexor activation (chin tucks), thoracic extension, lower trapezius, and serratus anterior patterning for forward-head posture correction.
+
+### 4. 🧘 Dynamic Joint Mobility (47 Drills across 6 Anatomical Zones)
+- **General Full-Body Flow**: Balanced 10-drill sequence targeting hips (2), spine (2), shoulders (2), ankles (2), wrists/neck (1), and hamstrings (1).
+- **Targeted Joint Routines**: Focus on specific anatomical zones:
+  - 🦵 **Hips & Pelvis**
+  - 🛡️ **Thoracic Spine & Back**
+  - 💪 **Shoulders & Scapulae**
+  - 🦶 **Ankles & Calves**
+  - ✋ **Wrists, Forearms & Neck**
+  - 🏃 **Hamstrings & Posterior Chain**
+- Prescribed in **Zone 1 (50%–60% $HR_{max}$)** for active joint restoration and parasympathetic cooldown.
+
+### 5. 🛡️ Biomechanical Guardrails & 25 Medical Conditions Matrix
+The engine features a strict **Hard Firewall** that excludes forbidden movements and never falls back to unsafe exercises.
+
+#### Category A: Joint, Spine & Biomechanical Isolation (12 Conditions)
+- ✋ **Wrist (Hard Firewall / Zero-Palm)**: Eliminates push-ups, burpees, planks, bear crawls, and mountain climbers unless modified to forearms.
+- 🦵 **Knee (Zero Shear)**: Excludes jump squats, sissy squats, pistol squats, and forward walking lunges.
+- 🚫 **No Kneeling (No All-Fours)**: Excludes quadruped postures and exercises with direct knee contact on the floor.
+- 🦴 **Lower Back / Hernia (Zero Axial)**: Excludes heavy barbell back squats, good mornings, and bent-over barbell rows.
+- 📐 **Hyperlordosis (Anterior Pelvic Tilt)**: Excludes hyperextensions and hip-flexor-dominant straight leg raises.
+- 💪 **Shoulder Impingement**: Excludes upright rows, behind-the-neck presses, and deep dips.
+- ⚡ **Elbow Tendonitis / Epicondylitis**: Excludes heavy skull crushers and close-grip tricep presses.
+- 🦶 **Ankle Sprain / Mobility**: Excludes plyometric jumping, burpees, and high-impact dorsiflexion.
+- 🦴 **Hip Impingement / Labrum**: Excludes extreme hip flexion angles and jump lunges.
+- 🧘 **Neck / Cervical Spine Tension**: Excludes neck sit-ups and heavy barbell shrugs.
+- ⚡ **Sciatica / Piriformis Syndrome**: Excludes aggressive sciatic nerve tensioning and heavy seated leg presses.
+- 🦶 **Flat Feet / Plantar Fasciitis**: Replaces explosive foot strikes with controlled intrinsic foot activation.
+
+#### Category B: Female Health & Posture (4 Conditions)
+- 🌸 **Diastasis & Pelvic Floor Safe**: Bans crunches, sit-ups, V-ups, and prone doming planks.
+- 🤰 **Pregnancy Safe Protocol**: Eliminates supine inferior vena cava compression, prone positions, and high intra-abdominal pressure.
+- 👶 **Postpartum Recovery**: Gentle core restoration without axial loading or plyometrics.
+- 🩸 **Varicose Veins (Anti-Stagnation)**: Excludes prolonged static standing holds and wall sits; promotes calf muscle pumping.
+
+#### Category C: Cardiovascular & Hemodynamic (3 Conditions)
+- 🫀 **Hypertension**: Eliminates head-below-heart inversions (pike push-ups, decline planks) and Valsalva breath-holding.
+- 📉 **Hypotension**: Prevents rapid orthostatic level shifts between floor and standing.
+- 💓 **Arrhythmia / Tachycardia**: Caps cardiovascular intensity to Zone 1–2 (recovery/aerobic base).
+
+#### Category D: Endocrine, Metabolic & Recovery (4 Conditions)
+- 🦋 **Thyroid / Hypothyroidism (Anti-Cortisol)**: Replaces exhaustive HIIT with controlled tempo and extended rest periods (75s+) to prevent cortisol spikes.
+- 🔋 **Adrenal Fatigue**: Enforces 90s+ rest between sets and moderate pacing.
+- 🩺 **Type 2 Diabetes (Insulin Sensitivity)**: Prioritizes large muscle group recruitment (quads, glutes, lats) to stimulate GLUT4 glucose uptake.
+- 💧 **Edema / Lymphatic Drainage**: Integrates venous return calf pumps and eliminates blood pooling.
+
+#### Category E: Respiratory & Gastrointestinal (2 Conditions)
+- 🫁 **Asthma Care**: Regulates cadence and excludes breathless sprint intervals.
+- 🔥 **GERD / Acid Reflux**: Eliminates inverted torso positions, decline presses, and flat supine crunches.
+
+---
+
+## ⏱️ Workout Execution Formats & Protocols
+
+1. **📋 Standard Sets & Superset Pairs**:
+   - 5 superset pairs (A1/A2, B1/B2, C1/C2, D1/D2, E1/E2) with 45–90s recovery.
+2. **🔁 Circuit Training**:
+   - 10 exercises performed in continuous sequence with 15s transition between stations; 2–3 rounds.
+3. **⏱️ Interactive Tabata Protocol & Voice Engine**:
+   - 40 seconds of high-intensity work / 10 seconds of rest, 8 cycles per set, 60s recovery between sets.
+   - **Rising dynamic countdown tone** and visual pulsing heartbeat in the final 10 seconds.
+   - **Web Speech API voice callouts** speaking upcoming movements during rest intervals.
+4. **🥪 "Sandwich" Pyramid Ladder**:
+   - 10-station pyramid: `Ex 1 -> 1+2 -> 1+2+3 ... up to 1..10! Then descend: 2..10 -> 3..10 ... to Ex 10 alone.`
+
+---
+
+## ⌚ Smartwatch Telemetry Hub & 5-Zone Physiology
+
+### Live Web Bluetooth Streaming
+Connect any standard Bluetooth Heart Rate monitor (Apple Watch via compatible broadcaster, Garmin, Polar H10/OH1, Whoop, Scosche) directly in Google Chrome, Microsoft Edge, or Opera using the native **Web Bluetooth API** (`heart_rate` service, `heart_rate_measurement` characteristic). Live BPM is displayed dynamically in the top bar.
+
+### 5 Physiological Training Zones
+Calibrated automatically to user age ($HR_{max} = 220 - \text{age}$) or optional measured maximum HR:
+- **Zone 1 (50%–60% $HR_{max}$)**: Active Recovery & Joint Restoration (Mobility & Rehab routines).
+- **Zone 2 (60%–70% $HR_{max}$)**: Maximum Lipid Oxidation / Aerobic Base ("Fat Burning" pacing).
+- **Zone 3 (70%–80% $HR_{max}$)**: Aerobic Power & Conditioning (Circuits & Toning).
+- **Zone 4 (80%–90% $HR_{max}$)**: Anaerobic Threshold / Hypertrophic Mechanical Tension (Strength & Muscle Gain).
+- **Zone 5 (90%–100% $HR_{max}$)**: Peak Neuromuscular Power & VO2 Max Bursts (Tabata intervals).
+
+### Post-Workout Telemetry Hub Inputs
+Upon finishing a workout, log your session data or save streamed metrics:
+- **Duration** (minutes)
+- **Min, Average, and Peak Heart Rate** (BPM)
+- **Active Calories & Total Calories** (kcal)
+- **Watch Training Load** (1.0–5.0)
+- **Recovery Time** (hours)
+- **Zone Minutes Breakdown** (Zone 1 to Zone 5 distribution)
+- **Bilingual Physiological Analysis**: Instant coach evaluation comparing achieved HR zone vs target zone with a visual 5-zone gauge.
+
+---
+
+## 🤖 Google ADK (Agent Development Kit) Architecture
+
+The coach is engineered with Google's **Agent Development Kit (ADK)** framework (`agent.py`) using Gemini models (`gemini-2.0-flash`), featuring hierarchical multi-agent delegation and custom tool calling:
+
+```mermaid
+graph TD
+    Root["👑 Root Coordinator (ai_fitness_coach)"]
+    Planner["📅 Workout Planner (workout_planner)"]
+    Technique["🧘 Technique Coach (technique_coach)"]
+    Tabata["⏱️ Tabata Specialist (tabata_specialist)"]
+    Mobility["🤸 Mobility Specialist (mobility_specialist)"]
+    Rehab["🩹 Rehabilitation Specialist (rehab_specialist)"]
+    Cardio["❤️ Cardio Physiology Coach (cardio_physiology_coach)"]
+
+    Root --> Planner
+    Root --> Technique
+    Root --> Tabata
+    Root --> Mobility
+    Root --> Rehab
+    Root --> Cardio
+```
+
+### 1. Hierarchical Multi-Agent Structure
+- **👑 Root Coordinator (`root_agent` / `ai_fitness_coach`)**: Orchestrates program planning, biomechanics, interval timers, clinical recovery, cardiovascular physiology, and progress tracking.
+- **📅 Workout Planner Sub-Agent (`workout_planner`)**: Programs 5-Day rolling splits, targeted mono-workouts, 3-day foundation plans, and custom focus sessions.
+- **🧘 Technique & Biomechanics Sub-Agent (`technique_coach`)**: Provides setup, execution steps, and joint-safe modifications across 340 strength exercises in English and Ukrainian.
+- **⏱️ Tabata Interval Specialist Sub-Agent (`tabata_specialist`)**: Configures 40s/10s Tabata protocols with pacing and voice cues.
+- **🤸 Mobility & Joint Restoration Sub-Agent (`mobility_specialist`)**: Builds 10-drill joint mobility flows across 6 anatomical zones.
+- **🩹 Rehabilitation & Clinical Recovery Sub-Agent (`rehab_specialist`)**: Prescribes restorative routines across 6 clinical departments (diastasis, hyperlordosis, carpal tunnel, knees, ankles, cervical spine).
+- **❤️ Cardio Physiology Coach Sub-Agent (`cardio_physiology_coach`)**: Calculates 5 physiological HR zones, assigns target zones, and analyzes post-workout telemetry.
+
+### 2. Custom ADK Tools (17 Tools)
+1. `generate_weekly_plan`: Generates the classic 3-day foundation weekly program with HR metadata.
+2. `generate_rolling_workout`: Generates the current day of the 5-Day Rolling Split with superset structure.
+3. `advance_rolling_split`: Advances the user's rolling split index to the next scheduled day.
+4. `generate_mono_workout`: Generates specialized mono-workouts (13-Exercise Lower Body, Back/Posture, Glutes, Core).
+5. `get_rehab_departments`: Retrieves the 6 rehabilitation departments and clinical descriptions.
+6. `generate_rehab_routine`: Generates an 8-drill clinical rehabilitation routine for a chosen department.
+7. `build_custom_focus_workout`: Tailors a 10-exercise session targeting user-requested muscle focus zones.
+8. `generate_mobility_routine`: Builds a 10-drill joint mobility flow with Zone 1 active recovery HR metadata.
+9. `get_mobility_zones`: Retrieves available anatomical mobility zones and descriptions.
+10. `search_exercise_catalog`: Searches the 340-exercise library with filters for equipment, movement pattern, and joint safety.
+11. `get_exercise_technique`: Biomechanical breakdown (Setup, Execution, Pro Tips) for any exercise in EN/UA.
+12. `get_tabata_protocol_settings`: Protocol configuration and countdown cues for 40s/10s Tabata.
+13. `calculate_heart_rate_zones`: Calculates 5 heart rate training zones and exact BPM ranges based on age and max HR.
+14. `get_target_heart_rate_zone`: Prescribes optimal target HR zone and BPM bounds for specific workout formats.
+15. `analyze_workout_heart_rate`: Compares recorded average & peak BPM against target zones with bilingual feedback.
+16. `log_workout_progress`: Logs completed sessions, updates exercise performance, and stores smartwatch telemetry.
+17. `get_user_progress_metrics`: Retrieves lifetime stats, workout counts, and weight delta tracking.
+
+---
+
+## 🚀 How to Run the App
+
+### 1. Web Application (Recommended)
+
+1. Open **Terminal** on your Mac.
 2. Navigate to the project directory:
    ```bash
    cd "/Users/admin/AI Fitness Coach"
@@ -119,66 +223,45 @@ An intelligent, local personal training engine tailored for home and gym workout
    ```text
    http://localhost:8000
    ```
-   *(If port 8000 is occupied, it will automatically fallback to 8080, 8081, etc., as printed in your terminal)*.
-5. In the top bar:
-   - Choose **Home** or **Gym**.
-   - Choose **Intermediate** or **Advanced**.
-   - Choose **EN** or **UA**.
-   - Click **"⚙️ Goals & Settings"** to calibrate your Age, optional Max HR, isolate sore areas (wrist, knee, etc.), set your weight goals, choose your workout method (Standard, Circuit, Tabata, or Sandwich), and set your TRX anchor.
-   - Click **"⚡ Generate Weekly Workouts"** for your complete 3-day foundation.
-   - Click **"🎯 Focus Workout"** for custom targeted muscle splits.
-   - Click **"🧘 Mobility"** to generate a general 10-drill full-body flow or target specific joints (hips, spine, shoulders, ankles, wrists, hamstrings).
+   *(If port 8000 is occupied, the server automatically selects port 8080, 8081, etc., as displayed in terminal output)*.
 
----
-
-## 🤖 Google ADK (Agent Development Kit) Architecture
-
-The coach is engineered with Google's **Agent Development Kit (ADK)** framework (`agent.py`) powered by Gemini models (`gemini-2.0-flash`), featuring hierarchical multi-agent delegation and custom tool calling:
-
-### 1. Hierarchical Multi-Agent Structure
-- **👑 Root Coordinator (`ai_fitness_coach`)**:
-  - The Head Coach orchestrating programming, form analysis, interval conditioning, mobility routines, cardiovascular physiology, and progress tracking.
-- **📅 Workout Planner Sub-Agent (`workout_planner`)**:
-  - Generates 10-exercise periodized weekly plans (Day A: Upper Push/Quads, Day B: Upper Pull/Hinge, Day C: Full Body) and targeted focus splits with target HR zone metadata.
-- **🧘 Technique & Biomechanics Sub-Agent (`technique_coach`)**:
-  - Delivers step-by-step form cues, setup/stance instructions, and joint-safe alternatives across 193 catalog exercises in English and Ukrainian.
-- **⏱️ Tabata Interval Specialist Sub-Agent (`tabata_specialist`)**:
-  - Guides dynamic high-intensity interval conditioning (40s work / 10s rest, 8 cycles/set, 60s recovery between sets) with vocal countdowns.
-- **🤸 Mobility & Joint Restoration Sub-Agent (`mobility_specialist`)**:
-  - Structures restoring 10-drill mobility flows (general full-body or targeted joint splits across hips, spine, shoulders, ankles, wrists, and hamstrings).
-- **❤️ Cardio Physiology Coach Sub-Agent (`cardio_physiology_coach`)**:
-  - Computes 5 physiological heart rate training zones ($HR_{max} = 220 - \text{age}$), assigns target zones for fat loss (Zone 2) and muscle building (Zone 3–4), and analyzes post-workout BPM telemetry.
-
-### 2. Custom ADK Tools
-1. `generate_weekly_plan`: Generates the foundation 3-day weekly workout program (10 exercises each, 2 focus zones + core always) with target HR metadata.
-2. `build_custom_focus_workout`: Builds a tailored 10-exercise session targeting user-requested muscle focus zones with target HR metadata.
-3. `generate_mobility_routine`: Builds an intelligent 10-drill mobility flow with Zone 1 active recovery HR metadata.
-4. `get_mobility_zones`: Retrieves available anatomical mobility zones and descriptions.
-5. `search_exercise_catalog`: Searches the 193-exercise library with filters for equipment, movement pattern, and joint safety.
-6. `get_exercise_technique`: Biomechanical breakdown (Setup & Stance, Execution Steps, Pro Tips) for any exercise.
-7. `get_tabata_protocol_settings`: Protocol configuration and countdown cues for 40s/10s Tabata.
-8. `calculate_heart_rate_zones`: Calculates 5 heart rate training zones and exact BPM ranges based on age and optional custom $HR_{max}$.
-9. `get_target_heart_rate_zone`: Prescribes optimal target HR zone and BPM bounds for specific goals and formats.
-10. `analyze_workout_heart_rate`: Compares recorded average & peak BPM against target zones and returns bilingual physiological feedback.
-11. `log_workout_progress`: Logs completed sessions, updates exercise performance, stores HR telemetry, and maintains cooldown memory.
-12. `get_user_progress_metrics`: Retrieves lifetime stats, workout counts, and weight delta tracking.
-
-### 3. How to Run the ADK Agent
-
-#### Option A: Google ADK CLI (Web UI & Inspector)
-```bash
-pip install google-adk
-adk web
-# Opens the interactive Google ADK Agent Explorer
-```
-
-#### Option B: Standalone Interactive Console Runner
+### 2. Standalone Interactive Console Runner
+Test workouts, mobility routines, rehab flows, and telemetry calculations directly in your terminal:
 ```bash
 python3 agent.py
 ```
-Provides an interactive terminal menu [1-7, q] to test weekly plan generation, custom workout builders, exercise search, Tabata pacing, metric tracking, and cardiovascular HR zone telemetry directly.
+*(Provides an interactive terminal menu `[1-7, q]` to execute ADK tools directly)*.
 
-#### Option C: Web App Integration
-The visual web app (`app.py`) exposes agent endpoints:
-- `GET /api/agent/info`: Returns ADK agent metadata, sub-agents, and model configuration.
-- `POST /api/agent/call`: Executes any of the 12 ADK tools dynamically with parameters.
+### 3. Google ADK CLI (Agent Explorer & Inspector)
+Inspect agent reasoning, sub-agent delegation, and tool calls using Google's ADK visual explorer:
+```bash
+pip install google-adk
+adk web
+```
+
+---
+
+## 🗂️ Project Directory Structure
+
+```text
+AI Fitness Coach/
+├── app.py                # Single-page web application server, REST API, Web Bluetooth sync, UI
+├── engine.py             # Exercise rotation engine, 5-day rolling split, hard biomechanical firewall
+├── models.py             # Dataclasses (Exercise, PlannedExercise, WorkoutPlan, CompletedWorkoutLog)
+├── database.py           # SQLite local database layer (user profile, history, exercise catalog)
+├── seed_data.py          # 340 Strength & Hypertrophy exercises + 38 Compound Combo Hybrids
+├── mobility_data.py      # 47 Dynamic Mobility exercises across 6 anatomical zones
+├── rehab_data.py         # 48 Clinical Rehabilitation exercises across 6 specialized departments
+├── heart_rate.py         # 5-Zone heart rate modeling, target zone prescription, telemetry analysis
+├── translations.py       # English & Ukrainian translation mappings, setups, and pro tips
+├── agent.py              # Google ADK agent definition, 7 sub-agents, 17 custom tools, CLI runner
+├── data/
+│   └── fitness.db        # Local SQLite database (persists profiles, history, and metrics)
+└── README.md             # System documentation and architecture reference
+```
+
+---
+
+## 🔒 Privacy & Local Data Storage
+
+All user settings, medical conditions, workout history, and cardiovascular telemetry are stored locally in `data/fitness.db` using SQLite. **No personal health data or biometric telemetry is sent to any third-party cloud service.**
