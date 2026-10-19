@@ -2218,6 +2218,168 @@ EXERCISE_DETAILS = {
         "Розгинайте руки вперед і вгору, розводячи кінці канату в піку скорочення. Опустіть руки за голову у глибокий розтяг трицепса.",
         "Кор напружений, ребра опущені; не прогинайтеся в попереку."
     ],
+    "pilates_roller_dead_bug": [
+        "Пілатес «Мертвий жук» з ролом під крижами",
+        "Lie supine on a yoga mat. Bend knees, lift hips, and place the foam roller horizontally directly under your sacrum/pelvis (NOT under the lumbar spine). Bring legs into tabletop (knees bent 90°, shins parallel to floor), reach arms toward ceiling.",
+        "Inhale to expand ribs 360°. Exhale through pursed lips, draw navel gently toward spine, and slowly extend opposite arm overhead and opposite leg forward and down until heel hovers just above the mat. The roller maintains posterior pelvic tilt with zero lumbar arching. Inhale, return to center, and switch sides.",
+        "Keep lumbar spine completely unloaded; the sacral roller blocks excessive anterior pelvic tilt. Do not touch floor if rib cage flares.",
+        "Ляжте на спину на килимок. Зігніть ноги в колінах, підніміть таз і розмістіть рол горизонтально чітко під крижами/тазом (НЕ під попереком). Підніміть ноги у положення 'тейбл-топ' (кут 90° у колінах), руки витягніть вгору до стелі.",
+        "Вдих на 360°. На видимоху підтягніть живіт до хребта і повільно опускайте протилежну руку назад за голову, а протилежну ногу випрямляйте вперед-вниз. Рол утримує таз у безпечному задньому нахилі без жодного прогину в попереку. Вдих — плавно поверніться в центр і змініть сторону.",
+        "Рол під крижами повністю знімає осьове навантаження з попереку. Працюйте плавно без ривків, відчуваючи глибокий кор."
+    ],
+    "pilates_roller_scissors_safe": [
+        "Безпечні «Ножиці» на прес із ролом під тазом",
+        "Lie on your back with the foam roller horizontally positioned under the sacrum and upper glutes. Extend both legs straight up toward the ceiling with toes softly pointed. Place hands lightly on the sides of the roller to stabilize.",
+        "Inhale. On the exhale, slowly scissor legs in opposite directions: lower one straight leg toward 45 degrees while drawing the other leg toward your torso. Pause with control, then scissor in a fluid tempo. Pelvis stays firmly anchored on the roller with zero lower back strain.",
+        "The elevated pelvis neutralizes psoas pull on the lumbar spine. Only lower the leg as far as you can maintain abdominal flat wall control.",
+        "Ляжте на спину, рол лежить горизонтально під крижами та верхньою частиною сідниць. Підніміть обидві прямі ноги вертикально вгору до стелі. Руками легко притримуйте краї рола з боків для балансу.",
+        "Вдих. На видимоху плавно розводьте прямі ноги у вертикальні 'ножиці': одна нога опускається вперед-вниз до кута 45°, інша спрямовується до корпусу. Рол під тазом повністю нейтралізує натяг попереку. Змініть ноги плавним безперервним рухом.",
+        "Піднятий таз усуває біль у спині, ізолюючи нижній прес. Тримайте живіт пласким без надування 'будиночка'."
+    ],
+    "pilates_roller_frogger_adductors": [
+        "Пілатес «Жабка» на внутрішню поверхню стегна з ролом під крижами",
+        "Lie supine with the roller horizontally placed under your sacrum. Connect heels together with toes turned out 45 degrees ('Pilates V' stance). Draw knees wide apart toward shoulders in a frog-like shape.",
+        "Inhale. On the exhale, squeeze heels together firmly and press legs outward and forward at a 45-degree diagonal, zipping the inner thighs tightly together like a zipper. Hold the adductor squeeze for 2 seconds, then bend knees wide to return.",
+        "Maintain continuous pressure between your inner heels. Sacrum elevation protects your back while isolating inner thighs and lower abs.",
+        "Ляжте на спину, рол під крижами. З'єднайте п'яти разом, розвівши носки на 45° (позиція пілатес-'V'). Розведіть коліна широко в сторони у напрямку плечей ('жабка').",
+        "Вдих. На видимоху сильно стисніть п'яти між собою та випрямляйте ноги вперед-вгору під кутом 45°, щільно 'застібаючи' внутрішню поверхню стегон від паху до колін. Затримайтеся на 2 сек у піковому стисканні, вдих — поверніться.",
+        "Постійно тримайте контакт п'ят. Рол під тазом дозволяє повністю виключити перенапруження попереку."
+    ],
+    "pilates_roller_inner_thigh_beats": [
+        "Удари п'ятами та кола ногами на внутрішню поверхню стегна з ролом під тазом",
+        "Lie supine with the foam roller under the sacrum. Extend both legs straight up toward the ceiling with toes pointed softly. Hands stabilize the roller.",
+        "Open legs out to a comfortable wide straddle to feel the inner thigh stretch. Exhale and rapidly click/beat inner heels together 3 times in center, then open wide again. Alternate with small outward circular pulses.",
+        "Engage the adductors to bring the legs together rather than momentum. Lower back remains completely flat and stress-free.",
+        "Ляжте на спину з ролом під крижами. Витягніть прямі ноги вертикально вгору. Руки притримують рол з боків.",
+        "Розведіть ноги в сторони до відчуття приємного розтягування внутрішньої поверхні стегон. На видимоху зведіть ноги в центр і зробіть 3 швидких пружних удари п'ятами, потім знову широко розведіть. Чергуйте з мікроколами.",
+        "Зведення виконується силою внутрішніх м'язів стегна. Поперек у повному комфорті завдяки підтримці ролу."
+    ],
+    "pilates_roller_pelvic_tilt_abs": [
+        "Підтягування колін на нижній прес із ролом під крижами",
+        "Lie supine with the roller under your sacrum. Knees bent at 90 degrees with toes lightly resting on the floor or in low tabletop.",
+        "Exhale deeply, initiate from lower abdominals to gently pull both knees toward your ribcage, lifting the tailbone slightly further off the roller. Pause 2 seconds at the top contraction, then lower toes back with control.",
+        "Do not swing legs with momentum. Focus on the curling motion of the lower pelvis powered by deep lower abdominals.",
+        "Ляжте на спину, рол під крижами. Ноги зігнуті в колінах під кутом 90°, кінчики носків злегка торкаються підлоги.",
+        "Глибокий видих: силою нижньої частини преса підтягніть коліна до грудей, злегка підкручуючи таз на ролі вгору. Пауза 2 сек у верхній точці, вдих — плавно опустіть носки назад.",
+        "Працюйте без інерції та махів. Рух відбувається виключно за рахунок підкручування тазу м'язами живота."
+    ],
+    "pilates_roller_glute_bridge_march": [
+        "Пілатес-місток та марш зі стопами на ролі для сідниць та задньої поверхні",
+        "Lie supine on mat. Place the soles of both feet horizontally across the foam roller, knees bent at 90 degrees. Arms resting along your sides on the floor.",
+        "Exhale, articulate your spine vertebra by vertebra peeling up into a glute bridge. Squeeze glutes at the top without hyperextending the lower back. Holding the bridge, lift one foot 2 inches off the roller into a controlled march, replace it, and switch sides.",
+        "Keep the roller stable under your feet by actively engaging hamstrings and glutes. Prevent hips from sagging when marching.",
+        "Ляжте на спину на килимок. Поставте стопи обох ніг на рол, коліна зігнуті під 90°. Руки лежать вздовж корпусу на підлозі.",
+        "Видих: хвилею хребець за хребцем підніміть таз у сідничний міст. Стисніть сідниці у верхній точці. Утримуючи міст, плавно підніміть одну стопу на 5 см від ролу в марш, опустіть і повторіть іншою ногою.",
+        "Утримуйте рол нерухомим активним напруженням сідниць і задньої поверхні стегна. Не прогинайтеся в попереку."
+    ],
+    "static_wall_sit_abduction": [
+        "Статичний стільчик біля стіни з розведенням колін у міні-резинці — 45 сек",
+        "Place a mini-band just above your knees. Lean back against a smooth wall and slide down until your thighs are parallel to the floor (knees bent 90°). Back and head pressed firmly to the wall.",
+        "Hold the 90-degree wall sit position for 35–45 seconds. While holding, actively press your knees outward against the band into external abduction, or elevate your heels onto tip-toes to fire the calves. Breathe rhythmically.",
+        "Do not let knees cave inward. Keep entire back flat against the wall with zero forward torso leaning.",
+        "Одягніть міні-резинку трохи вище колін. Притуліться спиною до стіни і сповзіть вниз до кута 90° у колінах (стегна паралельні підлозі). Вся спина притиснута до стіни.",
+        "Утримуйте положення 'стільчик' 35–45 секунд. Одночасно постійно тисніть колінами назовні проти опору резинки (вмикаючи середній сідничний м'яз / 'вушка') або підніміть п'яти на носки.",
+        "Не давайте колінам завалюватися всередину. Дихайте рівно, тримайте поперек притиснутим до стіни."
+    ],
+    "static_plie_squat_calf_hold": [
+        "Статичне утримання пліє-присіду на носках — 35–45 сек",
+        "Stand with feet 1.5x shoulder width, toes turned outwards at 45 degrees. Hands in prayer at chest or on hips.",
+        "Descend into a deep plie squat until thighs are nearly parallel to the floor. While holding the bottom position, lift both heels off the floor onto tip-toes. Hold this isometric stance for 35–45 seconds, pulsing inner thighs back.",
+        "Keep torso vertical like a ballerina; do not tip forward at the hips. Press knees back in line with toes.",
+        "Широка стійка (в 1.5 рази ширше плечей), носки розгорнуті назовні під 45°. Руки перед грудьми або на поясі.",
+        "Опустіться у глибокий пліє-присід до паралелі стегон із підлогою. Зафіксуйте положення та відірвіть обидві п'яти від підлоги, піднявшись на носки. Утримуйте статику 35–45 секунд.",
+        "Корпус суворо вертикальний, наче ви ковзаєте вздовж стіни. Коліна розкриті широко по лінії носків."
+    ],
+    "static_glute_bridge_single_hold": [
+        "Статичне утримання сідничного мосту на одній нозі — 30 сек на сторону",
+        "Lie supine on mat. Bend both knees with feet flat near glutes. Extend one leg straight up toward ceiling or cross ankle over opposite knee.",
+        "Drive through the heel of the planted foot and raise hips into full extension. Hold this top peak contraction statically for 30 seconds per leg without letting pelvis tilt or drop.",
+        "Check that both hip bones remain level. Drive force purely through the glute muscle rather than arching the lumbar spine.",
+        "Ляжте на спину на килимок. Зігніть ноги в колінах, стопи біля сідниць. Підніміть одну ногу вертикально вгору або покладіть щиколотку на протилежне коліно.",
+        "Виштовхніть таз вгору через п'яту опорної ноги у верхню точку сідничного мосту. Зафіксуйте статичне утримання на 30 секунд на кожну ногу з максимальним стисканням сідниці.",
+        "Контролюйте, щоб обидві тазові кістки були на одній лінії без перекосу. Не прогинайте поперек."
+    ],
+    "pilates_side_lying_leg_circles": [
+        "Пілатес-серія лежачи на боці на «вушка» та внутрішню поверхню стегна + статика",
+        "Lie on your side with hips stacked directly over each other. Rest head comfortably on your outstretched bottom arm (zero wrist stress). Legs extended slightly in front of hip line.",
+        "Lift top leg to hip height. Perform 10 small forward dinner-plate circles, 10 reverse circles, and hold at top for a 15-second isometric burn. Flip or reposition to bottom leg for inner thigh lifts.",
+        "Stack hips vertically like two teacups; do not roll pelvis backward. Keep waist cinched off the mat.",
+        "Ляжте на бік, тазові кістки суворо одна над одною. Голова лежить на витягнутій нижній руці (нульове навантаження на зап'ястя). Ноги трохи виведені вперед перед лінією корпусу.",
+        "Підніміть верхню ногу на висоту тазу. Виконайте 10 маленьких кіл вперед розміром з тарілку, 10 кіл назад і зафіксуйте ногу вгорі у статиці на 15 секунд. Потім опрацюйте нижню ногу на приводні м'язи.",
+        "Не завалюйте таз назад. Відчувайте прицільне горіння в середньому сідничному м'язі ('зона вушок')."
+    ],
+    "pilates_spine_twist_band": [
+        "Пілатес-скручування сидячи для тонкої талії з резинкою",
+        "Sit tall on sit-bones with legs straight out together (or cross-legged). Hold a resistance band taut between both hands at chest level, spine tall like a string pulling from your crown.",
+        "Inhale to lengthen spine upward. Exhale, cinch your waist, and rotate ribcage smoothly to the right in a double pulse (twist, twist deeper). Inhale return to center, exhale and twist to the left. Hips stay completely anchored.",
+        "Do not let hips shift. Rotate purely from thoracic spine and obliques to narrow the waistline without thickening.",
+        "Сядьте рівно на сідничні кістки, ноги витягнуті вперед або по-турецьки. Розтягніть довгу резинку між руками на рівні грудей, верхівка тягнеться вгору.",
+        "Вдих — витягніть хребет вгору. На видимоху підтягніть живіт і плавно скрутіть грудну клітку вправо з подвійною пульсацією. Вдих — центр, видих — скручування вліво. Таз залишається нерухомим.",
+        "Обертання виконується тільки грудним відділом та косими м'язами без рухів тазу. Вправа моделює тонку талію."
+    ],
+    "pilates_hundred_forearms_roller": [
+        "Пілатес «Сотня» з розвантаженням попереку — статика кора",
+        "Lie supine on mat. Sacrum rests on the foam roller (or knees in tabletop with lower back glued to mat). Curl head and shoulder blades off floor with chin tucked. Arms extended straight by your sides.",
+        "Pump arms up and down rhythmically 6 inches off floor. Inhale for 5 counts, exhale for 5 counts through pursed lips. Maintain steady abdominal hollowing for 10 breathing cycles (100 pumps total).",
+        "Keep lumbar spine 100% unloaded. If neck feels fatigue, rest head on a small yoga block or cushion while continuing arm pumps.",
+        "Ляжте на спину на килимок, рол під крижами або поперек щільно притиснутий до килимка, ноги в позиції 'тейбл-топ'. Підніміть лопатки, підборіддя до грудей. Руки витягнуті вздовж корпусу.",
+        "Ритмічно пульсуйте прямими руками вгору-вниз з амплітудою 10 см. Вдих на 5 рахунків, видих на 5 рахунків через губи трубочкою. Виконайте 10 дихальних циклів (100 пульсацій).",
+        "Поперек повністю розвантажений. Якщо втомлюється шия, опустіть голову на подушку або блок, продовжуючи рух руками."
+    ],
+    "posture_chin_tuck_wall_angel": [
+        "Ретракція шиї (від холки) + ковзання рук по стіні «Янгол»",
+        "Stand with your back, sacrum, and back of head against a smooth wall, feet 15 cm away from the wall. Gently tuck your chin making a double chin to align C7-T1 vertebrae.",
+        "Place forearms against the wall in a 'W' or 'goalpost' shape. Slide forearms up the wall into a 'Y' shape while keeping head, lower back, elbows, and wrists contacting the wall. Pause 2s at top, slide down.",
+        "Do not let your head poke forward or lower back arch off the wall. This decompresses the cervicothoracic junction where humps form.",
+        "Станьте спиною, крижами та потилицею до рівної стіни, стопи за 15 см від плінтуса. М'яко втягніть підборіддя назад у подвійне підборіддя, вирівнюючи зону C7-T1.",
+        "Притисніть передпліччя та лікті до стіни у позицію 'W'. Повільно ковзайте руками вгору в позицію 'Y', не відриваючи потилиці, ліктів та попереку від стіни. Пауза 2 сек, плавно опустіть.",
+        "Не висувайте голову вперед при русі рук. Цей рух прицільно розвантажує перехід шиї в грудний відділ (де утворюється холка)."
+    ],
+    "posture_roller_chest_opener": [
+        "Поздовжнє розкриття грудного відділу та плечей лежачи вздовж ролу",
+        "Lie lengthwise along a full foam roller so your tailbone and head are fully supported. Knees bent, feet flat on the floor for balance.",
+        "Open arms wide out to the sides with palms facing ceiling. Slowly sweep arms along the floor like snow angels, bringing them overhead and back down. Breathe deeply into the collarbones.",
+        "Allow gravity to passively stretch the tight front chest muscles while the spine naturally extends over the roller.",
+        "Ляжте вздовж довгого ролу так, щоб куприк, весь хребет та потилиця повністю спиралися на рол. Ноги зігнуті, стопи на підлозі для стійкості.",
+        "Розкрийте руки широко в сторони долонями до стелі. Повільно ковзайте руками по підлозі у формі 'снігового янгола', піднімаючи їх через сторони вгору і плавно опускаючи. Дихайте глибоко в ключиці.",
+        "Дозвольте гравітації м'яко розкрити затиснуті грудні м'язи. Рол повертає правильний анатомічний вигин грудного відділу."
+    ],
+    "posture_band_w_external_rotation": [
+        "Розведення рук із резинкою у позицію «W» для розвороту плечей назад та проти сутулості",
+        "Stand tall with looped band around wrists or hold light band between hands. Elbows bent 90 degrees and pinned closely against your ribcage.",
+        "Keep elbows glued to ribs. Rotate forearms and hands outwards away from each other creating a 'W' shape with your arms. Squeeze the bottom corners of your shoulder blades together and down. Pause 2s, return.",
+        "Do not let elbows flare away from your ribs or shrug shoulders toward ears. Focus on pulling the shoulder blades down and back.",
+        "Станьте рівно, міні-резинка на зап'ястях або тримайте кінці стрічки в руках. Лікті зігнуті під 90° і щільно притиснуті до боків корпусу.",
+        "Не відриваючи ліктів від ребер, розведіть передпліччя та долоні в сторони назовні, утворюючи літеру 'W'. Зведіть нижні краї лопаток до центру та вниз. Пауза 2 сек, поверніться.",
+        "Плечі опущені від вух вниз. Рух прицільно повертає загорнуті вперед плечі у правильне положення."
+    ],
+    "posture_prone_diamond_press": [
+        "Підйом передпліч «Діамант» лежачи на животі — прицільна вправа від холки та для постави",
+        "Lie prone (face down) on your mat with forehead resting on a small folded towel. Form a diamond shape with your hands over your head (thumbs and index fingers touching), elbows bent wide.",
+        "Retract chin gently. Inhale, and on exhale elevate your forearms, elbows, and hands 2–3 inches off the floor while hovering chest slightly. Squeeze mid-back and lower traps beneath the hump area. Hold 3s, lower smoothly.",
+        "Do not hyperextend lower back; keep glutes lightly engaged and pubic bone pinned to the mat. Movement originates from lower traps.",
+        "Ляжте на живіт на килимок, чоло спирається на складений рушник. Руки над головою зімкнені у формі 'діаманта' (великі та вказівні пальці торкаються), лікті широко в сторони.",
+        "М'яко втягніть підборіддя. На видимоху відірвіть передпліччя, долоні та лікті на 5 см від підлоги, злегка піднявши груди. Сконцентруйте напруження в зоні між лопатками та під холкою. Утримайте 3 сек, плавно опустіть.",
+        "Не піднімайтеся попереком; притискайте лобкову кістку до килимка. Працюють тільки м'язи верхньої спини та лопаток."
+    ],
+    "posture_cervical_isometric_band": [
+        "М'яка ізометрична ретракція голови назад для усунення холки",
+        "Sit or stand tall with neutral spine. Loop a light mini-band (or folded towel) behind the occiput (base of skull, just above the neck). Hold both ends with hands in front at nose level.",
+        "Gently press hands forward with light tension (5-10% effort). Slowly guide your head directly backward against the band resistance into cervical retraction without tilting chin up. Hold 5 seconds, release smoothly.",
+        "Imagine sliding your head back along a horizontal shelf. Never jerk or push excessively; deep neck stabilizers respond to gentle isometric holds.",
+        "Сядьте або станьте рівно. Накиньте легку стрічку або рушник на потилицю (основа черепа, трохи вище шиї). Кінці тримайте руками попереду на рівні носа.",
+        "Створіть руками легкий опір вперед. Повільно зсувайте голову строго назад проти опору резинки (ретракція), не задираючи підборіддя вгору. Затримайтеся на 5 секунд, плавно відпустіть.",
+        "Рух схожий на горизонтальне ковзання голови назад по поличці. Не перенапружуйте шию, зусилля м'яке та точне."
+    ],
+    "posture_doorway_pec_minor_release": [
+        "Активне розкриття малих грудних м'язів та загорнутих плечей у дверному отворі",
+        "Stand in an open doorway. Place your right forearm vertically against the doorframe, elbow bent at 90 degrees or slightly above shoulder height.",
+        "Take a small step forward with your right foot and gently rotate your chest away to the left until you feel a targeted stretch beneath the collarbone. Exhale, gently pulse forward and hold 20-30 seconds. Switch sides.",
+        "Do not let the shoulder shrug upward; keep scapula pressed down. Avoid hyperextending lower back.",
+        "Станьте у відкритому дверному отворі. Покладіть праве передпліччя вертикально на одвірок, лікоть на рівні або трохи вище плеча.",
+        "Зробіть невеликий крок правою ногою вперед і плавно розверніть корпус вліво до відчуття приємного розтягування під ключицею. Видихніть і утримуйте 20-30 секунд. Повторіть на ліву сторону.",
+        "Плече опущене вниз від вуха. Не прогинайтеся в попереку, розкривайте тільки передню поверхню плечового пояса."
+    ]
 }
 
 from mobility_data import MOBILITY_TRANSLATIONS

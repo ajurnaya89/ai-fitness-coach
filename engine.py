@@ -825,6 +825,28 @@ MONO_DAY_TEMPLATES = {
             {"zone": "Pelvic Floor (Adductor Squeeze Bridge)", "zone_ua": "Тазове дно (Сідничний міст зі стисканням м'яча)", "patterns": ["Hinge"], "families": ["Glute Bridge / Thrust", "Adductor Isolation"], "sets": 3, "reps": "12-15", "rest": 45, "superset": "Superset 5: E1"},
             {"zone": "Core Finish (Forearm Plank Toe Taps)", "zone_ua": "Фінішер (Торкання носками на передпліччях)", "patterns": ["Core"], "families": ["Anti-Extension Core", "Anti-Rotation Core"], "sets": 3, "reps": "12-15 each", "rest": 45, "superset": "Superset 5: E2"}
         ]
+    },
+
+    # Pilates & Statics / Sacrum-Unloaded Core (10 Exercises)
+    "pilates_static": {
+        "id": "pilates_static",
+        "title_en": "🧘‍♀️ Pilates & Statics / Sacrum-Unloaded Core",
+        "title_ua": "🧘‍♀️ Пілатес, Статика та Розвантажений Кор (10 вправ)",
+        "description_en": "Deep core toning, isometric stability, inner thigh sculpting, and pelvic-supported abdominal work with zero lumbar strain.",
+        "description_ua": "Глибокий тонус кору, ізометрична стабілізація, струнка внутрішня поверхня стегон та робота з тазом без осьового навантаження.",
+        "target_duration_minutes": 50,
+        "slots": [
+            {"zone": "Core / Sacrum Unload (Dead Bug on Roller)", "zone_ua": "Кор / Розвантаження крижів (Мертвий жук на ролі)", "patterns": ["Core"], "families": ["Anti-Extension / Transverse Abdominis", "Anti-Extension Core"], "sets": 3, "reps": "35-45s hold / 12-15 reps", "rest": 30, "superset": "Pair 1: A1"},
+            {"zone": "Lower Abs (Scissors with Pelvis on Roller)", "zone_ua": "Низ живота (Ножиці з тазом на ролі)", "patterns": ["Core"], "families": ["Lower Abdominals / Hip Dissociation", "Anti-Extension Core"], "sets": 3, "reps": "35-45s / 12-14 each", "rest": 30, "superset": "Pair 1: A2"},
+            {"zone": "Inner Thighs (Pilates Frogger on Roller)", "zone_ua": "Внутрішня частина стегна (Жабка на ролі)", "patterns": ["Combo", "Squat"], "families": ["Adductor & Core Integration", "Adductor Isolation"], "sets": 3, "reps": "12-15 reps (2s hold)", "rest": 30, "superset": "Pair 2: B1"},
+            {"zone": "Inner Thighs & Calves (Heel Beats on Roller)", "zone_ua": "Внутрішня поверхня стегон (Удари п'ятами на ролі)", "patterns": ["Combo"], "families": ["Adductor Isolation / Pilates Mat", "Adductor Isolation"], "sets": 3, "reps": "15 beats + 10 circles", "rest": 30, "superset": "Pair 2: B2"},
+            {"zone": "Glutes & Hamstrings (Marching Bridge on Roller)", "zone_ua": "Сідниці та біцепс стегна (Маршируючий міст на ролі)", "patterns": ["Hinge"], "families": ["Glute Bridge / Posterior Chain", "Glute Bridge / Thrust"], "sets": 3, "reps": "10-12 each side", "rest": 30, "superset": "Pair 3: C1"},
+            {"zone": "Statics / Glute Endurance (Single-Leg Bridge Hold)", "zone_ua": "Статика / Витривалість сідниць (Утримання на одній нозі)", "patterns": ["Hinge"], "families": ["Isometric Glute Bridge / Posterior", "Glute Bridge / Thrust"], "sets": 3, "reps": "30-40s hold each", "rest": 30, "superset": "Pair 3: C2"},
+            {"zone": "Statics / Quads (Wall Sit with Mini-Band)", "zone_ua": "Статика / Стегна (Стілець біля стіни з гумою)", "patterns": ["Squat"], "families": ["Isometric Knee Dominant", "Bilateral Knee Dominant"], "sets": 3, "reps": "40-50s hold", "rest": 30, "superset": "Pair 4: D1"},
+            {"zone": "Statics / Calves & Inner Thighs (Plié Squat Hold)", "zone_ua": "Статика / Литки та приводні (Пліє-присед на носках)", "patterns": ["Squat"], "families": ["Isometric Adductor & Plantarflexion", "Bilateral Knee Dominant"], "sets": 3, "reps": "35-45s hold", "rest": 30, "superset": "Pair 4: D2"},
+            {"zone": "Lateral Glutes / Pelvic Control (Side-Lying Leg Circles)", "zone_ua": "Середній сідничний (Кола ногою лежачи на боці)", "patterns": ["Squat", "Hinge"], "families": ["Pilates Mat Hip Abduction", "Hip Abduction / Stability"], "sets": 3, "reps": "12-15 each dir", "rest": 30, "superset": "Pair 5: E1"},
+            {"zone": "Deep Core / Hundred (Forearms & Roller Hundred)", "zone_ua": "Глибокий кор / Сотня (Сотня на передпліччях з ролом)", "patterns": ["Core"], "families": ["Pilates Abdominals / Deep Core", "Anti-Extension Core"], "sets": 3, "reps": "100 pump breaths", "rest": 30, "superset": "Pair 5: E2"}
+        ]
     }
 }
 
@@ -1651,6 +1673,9 @@ def adjust_reps_and_rest(
     elif workout_format == "sandwich":
         reps = "10 reps"
         rest = 30
+    elif workout_format in ["pilates_static", "pilates"]:
+        reps = "35-45s static hold / 12-15 slow tempo"
+        rest = 30
 
     # MEDICAL REST CONSTRAINTS: Prevent cortisol spikes, breathlessness & cardiovascular strain
     if any(c in meds for c in ["hypertension", "asthma"]):
@@ -1679,6 +1704,11 @@ def get_format_descriptions(workout_format: str):
             "🥪 'Sandwich' Method (Pyramid Ladder): Ex 1 -> Ex 1+2 -> Ex 1+2+3 ... up to 1..10! Then descend down: 2..10, 3..10 ... to Ex 10 alone.",
             "🥪 Метод 'Сендвіч' (Сходинки-піраміда): Вправа 1 -> 1+2 -> 1+2+3 ... до 1..10! Потім спадання: 2..10, 3..10 ... до вправи 10 окремо."
         )
+    elif fmt in ["pilates_static", "pilates"]:
+        return (
+            "🧘‍♀️ Pilates & Statics: Controlled mat & equipment flow, 30–45s isometric static holds, and foam-roller sacrum-unloading series (Zero wrist/lumbar strain).",
+            "🧘‍♀️ Пілатес та Статика: Контрольований пілатес-потік, 30–45 сек ізометричні утримання та розвантаження крижів на ролі (Нульовий тиск на зап'ястя та поперек)."
+        )
     return (
         "⚡ 5 Supersets x 2 Exercises (3 sets each, ~55-60 min). Complete paired exercises back-to-back, rest 45-60s, then repeat for 3 sets.",
         "⚡ 5 Суперсетів x 2 Вправи (по 3 підходи, ~55-60 хв). Виконуйте спарені вправи поспіль, відпочинок 45-60 сек, потім повторіть на 3 підходи."
@@ -1706,7 +1736,42 @@ def score_exercise_candidate(
     if exclude_ids and exercise.id in exclude_ids:
         return -9999.0
 
+    # 1. HARD BLACKLIST FROM COMMENTS & USER FEEDBACK
+    hist = history.get(exercise.id) if history else None
+    if hist:
+        # Check explicit disliked flag
+        if hist.get("disliked"):
+            return -99999.0
+
+        # Check negative keywords in last comment
+        user_cmt = (hist.get("user_comment") or hist.get("last_comment") or "").lower().strip()
+        if user_cmt:
+            neg_keywords = [
+                "не нравится", "не подобається", "перенапрягается", "перенапружується",
+                "болит", "болить", "поясница", "поперек", "не работает", "не працює",
+                "заменить", "замінити", "дискомфорт", "pain", "strain", "dislike",
+                "don't feel", "hurt", "bad", "плохо", "погано"
+            ]
+            if any(k in user_cmt for k in neg_keywords):
+                return -99999.0
+
     score = 100.0
+
+    # 2. SMART REPLACEMENT BOOSTER (+150.0): If user complained of lower back pain on any core drill
+    if history:
+        user_has_lumbar_core_strain = any(
+            any(term in (h.get("user_comment") or h.get("last_comment") or "").lower() for term in ["поясница", "поперек", "lower back", "попереку", "пояснице"])
+            for h in history.values()
+        )
+        if user_has_lumbar_core_strain:
+            ex_n = (exercise.name + " " + exercise.id).lower()
+            is_core = (
+                exercise.movement_pattern.lower() == "core" or
+                "core" in exercise.exercise_family.lower() or
+                "ab" in exercise.exercise_family.lower()
+            )
+            if is_core and any(term in ex_n for term in ["roller", "dead_bug", "dead bug", "sacrum", "lumbar-unloaded", "pelvis"]):
+                score += 150.0
 
     if exercise.exercise_family in used_families_this_week and not exercise.is_compound_combo:
         score -= 20.0
@@ -1748,7 +1813,6 @@ def score_exercise_candidate(
         score += 150.0
 
     # Freshness cooldown based on history
-    hist = history.get(exercise.id)
     if not hist or not hist.get("last_performed_date"):
         score += 50.0
     else:
@@ -1786,7 +1850,8 @@ def _build_planned_exercise(
     target_weight: float,
     level: str,
     perf_data: Optional[Dict] = None,
-    medical_conditions: Optional[List[str]] = None
+    medical_conditions: Optional[List[str]] = None,
+    history: Optional[Dict[str, Dict]] = None
 ) -> PlannedExercise:
     """Helper to assemble a PlannedExercise with closed-loop progression tips, last performance, and superset grouping."""
     prescribed_sets = slot.get("sets", 3)
@@ -1837,6 +1902,35 @@ def _build_planned_exercise(
                 coach_tip_en = f"⚖️ Optimal stimulus (RPE {rpe}). Aim for +1 extra rep with crisp technique."
                 coach_tip_ua = f"⚖️ Оптимальний стимул (RPE {rpe}). Спробуйте зробити на +1 повторення більше з чіткою технікою."
 
+    # Historical feedback / user comment / difficulty / disliked / replacement badge
+    ex_hist = history.get(selected_ex.id, {}) if history else {}
+    actual_sets = ex_hist.get("actual_sets")
+    perceived_difficulty = ex_hist.get("perceived_difficulty", 3) or 3
+    user_comment = ex_hist.get("user_comment", "") or ex_hist.get("last_comment", "") or ""
+    disliked = bool(ex_hist.get("disliked", False))
+    if not last_weight and ex_hist.get("actual_weight"):
+        last_weight = ex_hist.get("actual_weight")
+    if not last_reps and ex_hist.get("actual_reps"):
+        last_reps = ex_hist.get("actual_reps")
+
+    replaced_badge = None
+    replaced_badge_ua = None
+    if history:
+        user_has_lumbar_core_strain = any(
+            any(term in (h.get("user_comment") or h.get("last_comment") or "").lower() for term in ["поясница", "поперек", "lower back", "попереку", "пояснице"])
+            for h in history.values()
+        )
+        if user_has_lumbar_core_strain:
+            ex_n = (selected_ex.name + " " + selected_ex.id).lower()
+            is_core = (
+                selected_ex.movement_pattern.lower() == "core" or
+                "core" in selected_ex.exercise_family.lower() or
+                "ab" in selected_ex.exercise_family.lower()
+            )
+            if is_core and any(term in ex_n for term in ["roller", "dead_bug", "dead bug", "sacrum", "lumbar-unloaded", "pelvis"]):
+                replaced_badge = "🔄 Replaced based on your comment"
+                replaced_badge_ua = "🔄 Замінено на основі вашого коментаря"
+
     superset_tag = slot.get("superset", f"Superset {(slot_index + 1) // 2}: {'A' if slot_index % 2 == 1 else 'B'}")
 
     return PlannedExercise(
@@ -1871,7 +1965,13 @@ def _build_planned_exercise(
         coach_progression_tip=coach_tip_en,
         coach_progression_tip_ua=coach_tip_ua,
         last_weight=last_weight,
-        last_reps=last_reps
+        last_reps=last_reps,
+        actual_sets=actual_sets,
+        perceived_difficulty=perceived_difficulty,
+        user_comment=user_comment,
+        disliked=disliked,
+        replaced_badge=replaced_badge,
+        replaced_badge_ua=replaced_badge_ua
     )
 
 
@@ -1975,7 +2075,8 @@ def generate_rolling_workout(
             target_weight=target_weight,
             level=level,
             perf_data=perf_map.get(selected_ex.id),
-            medical_conditions=medical_conditions or profile.get("medical_conditions")
+            medical_conditions=medical_conditions or profile.get("medical_conditions"),
+            history=history
         )
         planned_exercises.append(planned_ex)
 
@@ -2123,7 +2224,8 @@ def generate_5day_program(
                 target_weight=target_weight,
                 level=level,
                 perf_data=perf_map.get(selected_ex.id),
-                medical_conditions=medical_conditions
+                medical_conditions=medical_conditions,
+                history=history
             )
             day_planned_exercises.append(planned_ex)
 
@@ -2181,6 +2283,9 @@ def generate_mono_workout(
     """Generates an on-demand targeted Mono-Day workout (e.g. 13-exercise lower body sculpt)."""
     if target_date is None:
         target_date = datetime.now()
+
+    if mono_key in ["pilates_static", "pilates"] and workout_format == "standard":
+        workout_format = "pilates_static"
 
     template = MONO_DAY_TEMPLATES.get(mono_key, MONO_DAY_TEMPLATES["special_13_lower_body"])
 
@@ -2251,7 +2356,8 @@ def generate_mono_workout(
             target_weight=target_weight,
             level=level,
             perf_data=perf_map.get(selected_ex.id),
-            medical_conditions=medical_conditions or profile.get("medical_conditions")
+            medical_conditions=medical_conditions or profile.get("medical_conditions"),
+            history=history
         )
         planned_exercises.append(planned_ex)
 
@@ -2567,7 +2673,8 @@ def generate_weekly_program(
                 target_weight=target_weight,
                 level=level,
                 perf_data=perf_map.get(selected_ex.id),
-                medical_conditions=medical_conditions or profile.get("medical_conditions")
+                medical_conditions=medical_conditions or profile.get("medical_conditions"),
+                history=history
             )
             planned_exercises.append(planned_ex)
 
@@ -2752,7 +2859,8 @@ def generate_custom_workout(
             target_weight=target_weight,
             level=level,
             perf_data=perf_map.get(selected_ex.id),
-            medical_conditions=medical_conditions or profile.get("medical_conditions")
+            medical_conditions=medical_conditions or profile.get("medical_conditions"),
+            history=history
         )
         planned_exercises.append(planned_ex)
 

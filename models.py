@@ -82,6 +82,12 @@ class PlannedExercise:
     last_weight: str = ""                   # Last logged weight
     last_reps: str = ""                     # Last logged reps
     gender_priority: List[str] = field(default_factory=lambda: ["female", "male"])
+    actual_sets: Optional[int] = None
+    perceived_difficulty: Optional[int] = 3
+    user_comment: str = ""
+    disliked: bool = False
+    replaced_badge: Optional[str] = None
+    replaced_badge_ua: Optional[str] = None
 
     def to_dict(self):
         return asdict(self)
@@ -98,7 +104,7 @@ class WorkoutPlan:
     name_ua: str = ""
     day_name_en: str = ""
     day_name_ua: str = ""
-    format_type: str = "standard"           # "standard", "circuit", "tabata", "sandwich", "superset", "antagonist"
+    format_type: str = "standard"           # "standard", "circuit", "tabata", "sandwich", "superset", "antagonist", "pilates_static"
     format_description: str = ""
     format_description_ua: str = ""
     goal: str = "muscle_gain"
@@ -124,6 +130,8 @@ class ExerciseFeedback:
     skipped: bool = False
     perceived_difficulty: int = 3
     notes: str = ""
+    user_comment: str = ""
+    disliked: bool = False
 
 
 @dataclass

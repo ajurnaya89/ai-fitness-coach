@@ -28,11 +28,40 @@ PLANS_CACHE_FILE = os.path.join(database.DB_DIR, "active_plans.json")
 
 def load_cached_plans() -> Dict[str, Any]:
     """Loads active plans from disk or generates initial default states."""
+    history = {}
+    try:
+        history = database.get_exercise_history()
+    except Exception:
+        pass
+
     if os.path.exists(PLANS_CACHE_FILE):
         try:
             with open(PLANS_CACHE_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, dict) and "strength" in data and isinstance(data["strength"], list) and len(data["strength"]) == 5:
+                    for plan_key in ["strength", "mobility", "rehab"]:
+                        plans = data.get(plan_key)
+                        if isinstance(plans, list):
+                            for day in plans:
+                                for ex in day.get("exercises", []):
+                                    eid = ex.get("exercise_id")
+                                    eh = history.get(eid, {})
+                                    ex.setdefault("actual_sets", eh.get("actual_sets"))
+                                    ex.setdefault("perceived_difficulty", eh.get("perceived_difficulty", 3))
+                                    ex.setdefault("user_comment", eh.get("user_comment", "") or eh.get("last_comment", ""))
+                                    ex.setdefault("disliked", eh.get("disliked", False))
+                                    ex.setdefault("replaced_badge", None)
+                                    ex.setdefault("replaced_badge_ua", None)
+                        elif isinstance(plans, dict):
+                            for ex in plans.get("exercises", []):
+                                eid = ex.get("exercise_id")
+                                eh = history.get(eid, {})
+                                ex.setdefault("actual_sets", eh.get("actual_sets"))
+                                ex.setdefault("perceived_difficulty", eh.get("perceived_difficulty", 3))
+                                ex.setdefault("user_comment", eh.get("user_comment", "") or eh.get("last_comment", ""))
+                                ex.setdefault("disliked", eh.get("disliked", False))
+                                ex.setdefault("replaced_badge", None)
+                                ex.setdefault("replaced_badge_ua", None)
                     return data
         except Exception:
             pass
@@ -407,9 +436,13 @@ class FitnessAppHandler(http.server.SimpleHTTPRequestHandler):
             plan_type = data.get("plan_type", "strength")  # strength, mobility, rehab
             day_idx = int(data.get("day_index", 0))
             ex_id = data.get("exercise_id")
-            completed = bool(data.get("completed", False))
-            reps = str(data.get("actual_reps", ""))
-            weight = str(data.get("actual_weight", ""))
+            completed = bool(data.get("completed", False)) if "completed" in data else None
+            actual_sets = data.get("actual_sets")
+            reps = str(data.get("actual_reps", "")) if "actual_reps" in data else None
+            weight = str(data.get("actual_weight", "")) if "actual_weight" in data else None
+            difficulty = data.get("perceived_difficulty")
+            user_comment = data.get("user_comment")
+            disliked = data.get("disliked")
 
             target_list = []
             if plan_type == "strength":
@@ -427,12 +460,40 @@ class FitnessAppHandler(http.server.SimpleHTTPRequestHandler):
 
             for ex in target_list:
                 if ex.get("exercise_id") == ex_id:
-                    ex["completed"] = completed
-                    if reps:
+                    if completed is not None:
+                        ex["completed"] = completed
+                    if actual_sets is not None:
+                        try:
+                            ex["actual_sets"] = int(actual_sets)
+                        except (ValueError, TypeError):
+                            pass
+                    if reps is not None:
                         ex["actual_reps"] = reps
-                    if weight:
+                    if weight is not None:
                         ex["actual_weight"] = weight
+                    if difficulty is not None:
+                        try:
+                            ex["perceived_difficulty"] = int(difficulty)
+                        except (ValueError, TypeError):
+                            pass
+                    if user_comment is not None:
+                        ex["user_comment"] = str(user_comment)
+                    if disliked is not None:
+                        ex["disliked"] = bool(disliked)
                     break
+
+            try:
+                database.save_immediate_exercise_feedback(
+                    exercise_id=ex_id,
+                    actual_sets=actual_sets,
+                    actual_reps=reps,
+                    actual_weight=weight,
+                    perceived_difficulty=difficulty,
+                    user_comment=user_comment,
+                    disliked=disliked
+                )
+            except Exception as e:
+                print("Error saving immediate feedback:", e)
 
             save_cached_plans(ACTIVE_PLANS)
             self._send_json({"status": "ok"})
@@ -552,7 +613,9 @@ class FitnessAppHandler(http.server.SimpleHTTPRequestHandler):
                         weight_used=str(el.get("weight_used", "Bodyweight")),
                         skipped=bool(el.get("skipped", False)),
                         perceived_difficulty=int(el.get("perceived_difficulty", 3)),
-                        notes=str(el.get("notes", ""))
+                        notes=str(el.get("notes", "")),
+                        user_comment=str(el.get("user_comment", "")),
+                        disliked=bool(el.get("disliked", False))
                     )
                     for el in data.get("exercise_logs", [])
                 ]
@@ -1237,6 +1300,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <option value="sandwich">🥪 Sandwich Pyramid</option>
             <option value="circuit">🔁 Circuit (3 Rounds)</option>
             <option value="tabata">⏱️ Tabata Protocol</option>
+            <option value="pilates_static">🧘‍♀️ Pilates & Statics</option>
             <option value="standard">🎯 Standard Sets</option>
           </select>
           <button class="btn btn-secondary" onclick="openFocusModal()">🎯 <span id="btn-focus-text">Focus Workout</span></button>
@@ -1382,7 +1446,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div class="chip" onclick="toggleMobZone('hips', this)">🦴 <span class="chip-label" data-en="Hips" data-ua="Кульшові суглоби">Hips</span></div>
         <div class="chip" onclick="toggleMobZone('spine', this)">🌀 <span class="chip-label" data-en="Thoracic Spine" data-ua="Грудний відділ">Thoracic Spine</span></div>
         <div class="chip" onclick="toggleMobZone('shoulders', this)">💪 <span class="chip-label" data-en="Shoulders" data-ua="Плечовий пояс">Shoulders</span></div>
-        <div class="chip" onclick="toggleMobZone('ankles', this)">🦶 <span class="chip-label" data-en="Ankles" data-ua="Гомілковостоп">Ankles</span></div>
+        <div class="chip" onclick="toggleMobZone('desk_posture', this)">💻 <span class="chip-label" data-en="Desk Posture: Open Shoulders & Anti-Hump" data-ua="Анти-офіс: Розкриття плечей та від холки">Desk Posture: Open Shoulders & Anti-Hump</span></div>
+        <div class="chip" onclick="toggleMobZone('ankles', this)">🦶 <span class="chip-label" data-en="Ankles, Feet & Toes" data-ua="Гомілкостоп, стопи та пальці">Ankles, Feet & Toes</span></div>
         <div class="chip" onclick="toggleMobZone('wrists_neck', this)">🤲 <span class="chip-label" data-en="Wrists & Neck" data-ua="Зап'ястя та шия">Wrists & Neck</span></div>
         <div class="chip" onclick="toggleMobZone('hamstrings', this)">🦵 <span class="chip-label" data-en="Hamstrings" data-ua="Задня поверхня">Hamstrings</span></div>
       </div>
@@ -1424,9 +1489,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <div class="chips-group" id="rehab-dept-chips">
         <div class="chip active-purple" onclick="toggleRehabDept('pelvic_floor_diastasis', this)">🌸 <span class="chip-label" data-en="Pelvic Floor & Diastasis" data-ua="Тазове дно та діастаз">Pelvic Floor & Diastasis</span></div>
         <div class="chip" onclick="toggleRehabDept('lower_back_lordosis', this)">🦴 <span class="chip-label" data-en="Lower Back & Lordosis" data-ua="Поперек та гіперлордоз">Lower Back & Lordosis</span></div>
+        <div class="chip" onclick="toggleRehabDept('desk_posture', this)">💻 <span class="chip-label" data-en="Desk Posture: Open Shoulders & Anti-Hump" data-ua="Анти-офіс: Розкриття плечей та від холки">Desk Posture: Open Shoulders & Anti-Hump</span></div>
         <div class="chip" onclick="toggleRehabDept('wrists_elbows', this)">🤲 <span class="chip-label" data-en="Wrists & Elbows" data-ua="Зап'ястя та лікті">Wrists & Elbows</span></div>
         <div class="chip" onclick="toggleRehabDept('knees_hips', this)">🦵 <span class="chip-label" data-en="Knees & Hips" data-ua="Коліна та кульшові">Knees & Hips</span></div>
-        <div class="chip" onclick="toggleRehabDept('ankles_feet', this)">🦶 <span class="chip-label" data-en="Ankles & Anti-Edema" data-ua="Стопи та лімфодренаж">Ankles & Anti-Edema</span></div>
+        <div class="chip" onclick="toggleRehabDept('ankles_feet', this)">🦶 <span class="chip-label" data-en="Ankles, Feet & Toes" data-ua="Гомілкостоп, стопи та пальці">Ankles, Feet & Toes</span></div>
         <div class="chip" onclick="toggleRehabDept('neck_scapula', this)">🧘 <span class="chip-label" data-en="Neck & Scapula" data-ua="Шия та лопатки">Neck & Scapula</span></div>
       </div>
 
@@ -1715,7 +1781,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let onbGear = [
       "adjustable dumbbells", "TRX", "short/mini resistance bands",
       "long resistance bands", "towels/sliders", "couch/bench support",
-      "small fitness ball", "yoga blocks"
+      "small fitness ball", "yoga blocks", "foam roller"
     ];
 
     // Equipment Ukrainian Translation Dictionary
@@ -1736,6 +1802,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       "couch": "диван",
       "small fitness ball": "малий фітбол",
       "yoga blocks": "йога-блоки",
+      "foam roller": "ролл для МФР / пілатес-ролл",
+      "yoga mat": "килимок для йоги",
       "bodyweight": "власна вага",
       "none": "без обладнання",
       "cable tower": "блочна рама / кросовер",
@@ -1773,9 +1841,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         guide_tip: "TRAINER TIP: ",
         mark_done: "Mark Done",
         marked_done: "✓ Completed",
+        sets_done: "Sets",
         weight: "Weight",
         reps_done: "Reps",
         diff: "RPE",
+        diff_label: "Difficulty (1-5)",
+        diff_1: "1 — Easy",
+        diff_2: "2 — Moderate",
+        diff_3: "3 — Optimal Target",
+        diff_4: "4 — Hard",
+        diff_5: "5 — Max Effort / Discomfort",
+        ai_comment_placeholder: "💬 Comment for AI Coach (e.g. Felt lower back strain, replace next time...)",
+        exclude_btn: "🚫 Exclude / Replace Next Time",
+        excluded_badge: "🚫 Excluded / Replaced Next Time",
+        replaced_badge_text: "🔄 Replaced based on your comment",
         skip: "Skip",
         next_day_prefix: "Next Day (Day ",
         start_cycle: "🎉 Start Next 5-Day Cycle 🚀",
@@ -1842,9 +1921,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         guide_tip: "ПОРАДА ТРЕНЕРА: ",
         mark_done: "Виконано",
         marked_done: "✓ Зроблено",
+        sets_done: "Підходи",
         weight: "Вага",
         reps_done: "Повтори",
         diff: "Складність",
+        diff_label: "Складність (1-5)",
+        diff_1: "1 — Легко",
+        diff_2: "2 — Помірно",
+        diff_3: "3 — Оптимально (Цільова)",
+        diff_4: "4 — Важко",
+        diff_5: "5 — Гранично / Дискомфорт",
+        ai_comment_placeholder: "💬 Коментар для AI тренера (наприклад: Відчула напругу в попереку, замінити...)",
+        exclude_btn: "🚫 Виключити / Замінити далі",
+        excluded_badge: "🚫 Виключено / Буде замінено",
+        replaced_badge_text: "🔄 Замінено на основі вашого коментаря",
         skip: "Пропуск",
         next_day_prefix: "Наступний день (День ",
         start_cycle: "🎉 Почати новий 5-денний цикл 🚀",
@@ -2215,6 +2305,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           const data = await res.json();
           if (data.status === "ok" && data.strength_plan) {
             currentStrengthPlan = data.strength_plan;
+            localStorage.setItem("afc_strength_plan", JSON.stringify(currentStrengthPlan));
             selectStrengthDay(0);
             showToast(currentLang === 'ua' ? I18N.ua.toast_cycle_started : I18N.en.toast_cycle_started);
           }
@@ -2238,6 +2329,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const data = await res.json();
         if (data.status === "ok" && data.strength_plan) {
           currentStrengthPlan = data.strength_plan;
+          localStorage.setItem("afc_strength_plan", JSON.stringify(currentStrengthPlan));
           renderStrengthDay();
         }
       } catch(e) {
@@ -2354,6 +2446,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         perfBadge = `<span class="badge badge-last-perf">${currentLang === 'ua' ? 'Минулий' : 'Last'}: ${ex.last_weight || '-'} × ${ex.last_reps || '-'}</span>`;
       }
 
+      let replacedBadgeHtml = "";
+      if (ex.replaced_badge) {
+        const rTxt = currentLang === "ua" ? (ex.replaced_badge_ua || I18N.ua.replaced_badge_text) : (ex.replaced_badge || I18N.en.replaced_badge_text);
+        replacedBadgeHtml = `<div class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981; margin-top: 6px; display: inline-flex; align-items: center; gap: 4px;">${rTxt}</div>`;
+      }
+
+      const diffVal = ex.perceived_difficulty || 3;
+      const prescribedSets = ex.actual_sets || ex.sets;
+      const prescribedReps = ex.actual_reps || ex.last_reps || ex.reps;
+      const weightVal = ex.actual_weight || ex.last_weight || "";
+      const isDisliked = Boolean(ex.disliked);
+
       card.innerHTML = `
         <div class="card-top">
           <div>
@@ -2368,6 +2472,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         </div>
 
+        ${replacedBadgeHtml}
         ${progTip ? `<div class="badge-tip">${progTip}</div>` : ""}
         ${altText ? `<div class="badge-alt">🔄 <strong>${currentLang === 'ua' ? 'Альтернатива' : 'Alternative'}:</strong> ${altText}</div>` : ""}
 
@@ -2384,18 +2489,40 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <button class="check-btn ${ex.completed ? 'checked' : ''}" onclick="toggleExComplete('${planType}', ${dayIdx}, '${ex.exercise_id}', ${!ex.completed})">
             ${ex.completed ? I18N[currentLang].marked_done : I18N[currentLang].mark_done}
           </button>
+
           <div class="input-group">
-            <label>${I18N[currentLang].weight}</label>
-            <input type="text" id="w-${ex.exercise_id}" value="${ex.actual_weight || ex.last_weight || ''}" placeholder="e.g. 14kg" style="width: 100px;">
+            <label>${I18N[currentLang].sets_done}:</label>
+            <input type="number" id="s-${ex.exercise_id}" min="1" max="10" value="${prescribedSets}" style="width: 50px;" onchange="updateExerciseData('${planType}', ${dayIdx}, '${ex.exercise_id}')">
           </div>
+
           <div class="input-group">
-            <label>${I18N[currentLang].reps_done}</label>
-            <input type="text" id="r-${ex.exercise_id}" value="${ex.actual_reps || ex.last_reps || ex.reps}" style="width: 80px;">
+            <label>${I18N[currentLang].reps_done}:</label>
+            <input type="text" id="r-${ex.exercise_id}" value="${prescribedReps}" style="width: 75px;" onchange="updateExerciseData('${planType}', ${dayIdx}, '${ex.exercise_id}')">
           </div>
-          <div class="input-group" style="margin-left: auto;">
-            <label>${I18N[currentLang].skip}</label>
-            <input type="checkbox" id="skip-${ex.exercise_id}" style="width: 16px; height: 16px;">
+
+          <div class="input-group">
+            <label>${I18N[currentLang].weight}:</label>
+            <input type="text" id="w-${ex.exercise_id}" value="${weightVal}" placeholder="${currentLang === 'ua' ? '1 гантель / заг.' : '1 DB / tot'}" style="width: 95px;" onchange="updateExerciseData('${planType}', ${dayIdx}, '${ex.exercise_id}')">
           </div>
+
+          <div class="input-group">
+            <label>${I18N[currentLang].diff_label}:</label>
+            <select id="diff-${ex.exercise_id}" onchange="updateExerciseData('${planType}', ${dayIdx}, '${ex.exercise_id}')" style="max-width: 155px;">
+              <option value="1" ${diffVal == 1 ? 'selected' : ''}>${I18N[currentLang].diff_1}</option>
+              <option value="2" ${diffVal == 2 ? 'selected' : ''}>${I18N[currentLang].diff_2}</option>
+              <option value="3" ${diffVal == 3 ? 'selected' : ''}>${I18N[currentLang].diff_3}</option>
+              <option value="4" ${diffVal == 4 ? 'selected' : ''}>${I18N[currentLang].diff_4}</option>
+              <option value="5" ${diffVal == 5 ? 'selected' : ''}>${I18N[currentLang].diff_5}</option>
+            </select>
+          </div>
+
+          <button class="btn btn-secondary" id="ban-${ex.exercise_id}" onclick="toggleExDislike('${planType}', ${dayIdx}, '${ex.exercise_id}')" style="margin-left: auto; padding: 5px 10px; font-size: 11px; ${isDisliked ? 'background: #ef4444; color: #fff; border-color: #dc2626;' : ''}">
+            ${isDisliked ? I18N[currentLang].excluded_badge : I18N[currentLang].exclude_btn}
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px; width: 100%;">
+          <input type="text" id="cmt-${ex.exercise_id}" value="${ex.user_comment || ''}" placeholder="${I18N[currentLang].ai_comment_placeholder}" style="width: 100%; background: #0b1120; border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #e2e8f0;" onchange="updateExerciseData('${planType}', ${dayIdx}, '${ex.exercise_id}')" onblur="updateExerciseData('${planType}', ${dayIdx}, '${ex.exercise_id}')">
         </div>
       `;
       return card;
@@ -2406,24 +2533,130 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (g) g.classList.toggle("open");
     }
 
+    async function updateExerciseData(planType, dayIdx, exId) {
+      const sInput = document.getElementById(`s-${exId}`);
+      const rInput = document.getElementById(`r-${exId}`);
+      const wInput = document.getElementById(`w-${exId}`);
+      const diffInput = document.getElementById(`diff-${exId}`);
+      const cmtInput = document.getElementById(`cmt-${exId}`);
+
+      const sets = sInput ? parseInt(sInput.value, 10) : null;
+      const reps = rInput ? rInput.value : "";
+      const weight = wInput ? wInput.value : "";
+      const diff = diffInput ? parseInt(diffInput.value, 10) : 3;
+      const comment = cmtInput ? cmtInput.value : "";
+
+      let list = [];
+      if (planType === "strength" && currentStrengthPlan[dayIdx]) {
+        list = currentStrengthPlan[dayIdx].exercises || [];
+      } else if (planType === "mobility" && currentMobilityPlan) {
+        list = currentMobilityPlan.exercises || [];
+      } else if (planType === "rehab" && currentRehabPlan) {
+        list = currentRehabPlan.exercises || [];
+      }
+
+      for (let ex of list) {
+        if (ex.exercise_id === exId) {
+          if (sets !== null && !isNaN(sets)) ex.actual_sets = sets;
+          if (reps) ex.actual_reps = reps;
+          if (weight) ex.actual_weight = weight;
+          if (diff) ex.perceived_difficulty = diff;
+          ex.user_comment = comment;
+          break;
+        }
+      }
+
+      if (planType === "strength") localStorage.setItem("afc_strength_plan", JSON.stringify(currentStrengthPlan));
+      else if (planType === "mobility") localStorage.setItem("afc_mobility_plan", JSON.stringify(currentMobilityPlan));
+      else if (planType === "rehab") localStorage.setItem("afc_rehab_plan", JSON.stringify(currentRehabPlan));
+
+      try {
+        await fetch("/api/toggle-exercise-complete", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            plan_type: planType,
+            day_index: dayIdx,
+            exercise_id: exId,
+            actual_sets: sets,
+            actual_reps: reps,
+            actual_weight: weight,
+            perceived_difficulty: diff,
+            user_comment: comment
+          })
+        });
+      } catch (err) {
+        console.error("Error updating exercise feedback:", err);
+      }
+    }
+
+    async function toggleExDislike(planType, dayIdx, exId) {
+      let list = [];
+      if (planType === "strength" && currentStrengthPlan[dayIdx]) {
+        list = currentStrengthPlan[dayIdx].exercises || [];
+      } else if (planType === "mobility" && currentMobilityPlan) {
+        list = currentMobilityPlan.exercises || [];
+      } else if (planType === "rehab" && currentRehabPlan) {
+        list = currentRehabPlan.exercises || [];
+      }
+
+      let currentDisliked = false;
+      for (let ex of list) {
+        if (ex.exercise_id === exId) {
+          ex.disliked = !ex.disliked;
+          currentDisliked = ex.disliked;
+          break;
+        }
+      }
+
+      if (planType === "strength") localStorage.setItem("afc_strength_plan", JSON.stringify(currentStrengthPlan));
+      else if (planType === "mobility") localStorage.setItem("afc_mobility_plan", JSON.stringify(currentMobilityPlan));
+      else if (planType === "rehab") localStorage.setItem("afc_rehab_plan", JSON.stringify(currentRehabPlan));
+
+      const btn = document.getElementById(`ban-${exId}`);
+      if (btn) {
+        if (currentDisliked) {
+          btn.style.background = "#ef4444";
+          btn.style.color = "#fff";
+          btn.style.borderColor = "#dc2626";
+          btn.innerText = I18N[currentLang].excluded_badge;
+        } else {
+          btn.style.background = "";
+          btn.style.color = "";
+          btn.style.borderColor = "";
+          btn.innerText = I18N[currentLang].exclude_btn;
+        }
+      }
+
+      try {
+        await fetch("/api/toggle-exercise-complete", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            plan_type: planType,
+            day_index: dayIdx,
+            exercise_id: exId,
+            disliked: currentDisliked
+          })
+        });
+        showToast(currentDisliked ? (currentLang === "ua" ? "🚫 Вправу виключено з майбутніх генерацій" : "🚫 Exercise excluded from future workouts") : (currentLang === "ua" ? "✓ Вправу відновлено" : "✓ Exercise unbanned"));
+      } catch (err) {
+        console.error("Error toggling dislike:", err);
+      }
+    }
+
     async function toggleExComplete(planType, dayIdx, exId, completed) {
+      const sInput = document.getElementById(`s-${exId}`);
       const wInput = document.getElementById(`w-${exId}`);
       const rInput = document.getElementById(`r-${exId}`);
+      const diffInput = document.getElementById(`diff-${exId}`);
+      const cmtInput = document.getElementById(`cmt-${exId}`);
+
+      const sets = sInput ? parseInt(sInput.value, 10) : null;
       const weight = wInput ? wInput.value : "";
       const reps = rInput ? rInput.value : "";
-
-      await fetch("/api/toggle-exercise-complete", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          plan_type: planType,
-          day_index: dayIdx,
-          exercise_id: exId,
-          completed: completed,
-          actual_reps: reps,
-          actual_weight: weight
-        })
-      });
+      const diff = diffInput ? parseInt(diffInput.value, 10) : 3;
+      const comment = cmtInput ? cmtInput.value : "";
 
       // Update local state
       let list = [];
@@ -2438,10 +2671,37 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       for (let ex of list) {
         if (ex.exercise_id === exId) {
           ex.completed = completed;
+          if (sets !== null && !isNaN(sets)) ex.actual_sets = sets;
           if (weight) ex.actual_weight = weight;
           if (reps) ex.actual_reps = reps;
+          if (diff) ex.perceived_difficulty = diff;
+          if (comment) ex.user_comment = comment;
           break;
         }
+      }
+
+      if (planType === "strength") localStorage.setItem("afc_strength_plan", JSON.stringify(currentStrengthPlan));
+      else if (planType === "mobility") localStorage.setItem("afc_mobility_plan", JSON.stringify(currentMobilityPlan));
+      else if (planType === "rehab") localStorage.setItem("afc_rehab_plan", JSON.stringify(currentRehabPlan));
+
+      try {
+        await fetch("/api/toggle-exercise-complete", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            plan_type: planType,
+            day_index: dayIdx,
+            exercise_id: exId,
+            completed: completed,
+            actual_sets: sets,
+            actual_reps: reps,
+            actual_weight: weight,
+            perceived_difficulty: diff,
+            user_comment: comment
+          })
+        });
+      } catch (err) {
+        console.error("Error saving complete toggle:", err);
       }
 
       if (planType === "strength") renderStrengthDay();
@@ -2520,6 +2780,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const data = await res.json();
         if (data.status === "ok" && data.mobility_plan) {
           currentMobilityPlan = data.mobility_plan;
+          localStorage.setItem("afc_mobility_plan", JSON.stringify(currentMobilityPlan));
           renderMobilityRoutine();
         }
       } catch(e) {
@@ -2577,6 +2838,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const data = await res.json();
         if (data.status === "ok" && data.rehab_plan) {
           currentRehabPlan = data.rehab_plan;
+          localStorage.setItem("afc_rehab_plan", JSON.stringify(currentRehabPlan));
           renderRehabRoutine();
         }
       } catch(e) {
@@ -2631,17 +2893,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const notes = document.getElementById("session-notes").value;
 
       const exerciseLogs = (day.exercises || []).map(ex => {
+        const sInput = document.getElementById(`s-${ex.exercise_id}`);
         const wInput = document.getElementById(`w-${ex.exercise_id}`);
         const rInput = document.getElementById(`r-${ex.exercise_id}`);
+        const diffInput = document.getElementById(`diff-${ex.exercise_id}`);
+        const cmtInput = document.getElementById(`cmt-${ex.exercise_id}`);
         const sCheck = document.getElementById(`skip-${ex.exercise_id}`);
         return {
           exercise_id: ex.exercise_id,
-          sets_completed: ex.sets,
-          reps_completed: rInput ? rInput.value : ex.reps,
-          weight_used: wInput ? wInput.value : "Bodyweight",
+          sets_completed: sInput ? (parseInt(sInput.value, 10) || ex.sets) : (ex.actual_sets || ex.sets),
+          reps_completed: rInput ? rInput.value : (ex.actual_reps || ex.reps),
+          weight_used: wInput ? wInput.value : (ex.actual_weight || "Bodyweight"),
           skipped: sCheck ? sCheck.checked : false,
-          perceived_difficulty: rpe,
-          notes: ""
+          perceived_difficulty: diffInput ? (parseInt(diffInput.value, 10) || rpe) : (ex.perceived_difficulty || rpe),
+          notes: "",
+          user_comment: cmtInput ? cmtInput.value : (ex.user_comment || ""),
+          disliked: Boolean(ex.disliked)
         };
       });
 
@@ -2687,12 +2954,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     async function submitCompletedWorkoutGeneric(planObj, formatType) {
       const exerciseLogs = (planObj.exercises || []).map(ex => ({
         exercise_id: ex.exercise_id,
-        sets_completed: ex.sets,
+        sets_completed: ex.actual_sets || ex.sets,
         reps_completed: ex.actual_reps || ex.reps,
         weight_used: ex.actual_weight || "Bodyweight",
         skipped: false,
-        perceived_difficulty: 2,
-        notes: ""
+        perceived_difficulty: ex.perceived_difficulty || 2,
+        notes: "",
+        user_comment: ex.user_comment || "",
+        disliked: Boolean(ex.disliked)
       }));
       await fetch("/api/complete", {
         method: "POST",
@@ -3108,6 +3377,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         if (data.status === "ok") {
           userProfile = data.profile;
           currentStrengthPlan = data.strength_plan;
+          localStorage.setItem("afc_strength_plan", JSON.stringify(currentStrengthPlan));
           selectStrengthDay(0);
           setVenue(userProfile.location || "home");
           setSex(userProfile.sex || "female");
@@ -3149,6 +3419,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const data = await res.json();
         if (data.status === "ok" && data.strength_plan) {
           currentStrengthPlan = data.strength_plan;
+          localStorage.setItem("afc_strength_plan", JSON.stringify(currentStrengthPlan));
           selectStrengthDay(data.day_index || 0);
           showToast(currentLang === "ua" ? "✓ Фокус-тренування згенеровано!" : "✓ Focus workout generated!");
         }
@@ -3283,9 +3554,36 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const cRes = await fetch("/api/current-plan");
         const cData = await cRes.json();
         if (cData.status === "ok") {
-          currentStrengthPlan = cData.strength_plan || [];
-          currentMobilityPlan = cData.mobility_plan || null;
-          currentRehabPlan = cData.rehab_plan || null;
+          if (cData.strength_plan && cData.strength_plan.length > 0) {
+            currentStrengthPlan = cData.strength_plan;
+            localStorage.setItem("afc_strength_plan", JSON.stringify(currentStrengthPlan));
+          } else {
+            const cachedStr = localStorage.getItem("afc_strength_plan");
+            if (cachedStr) {
+              try { currentStrengthPlan = JSON.parse(cachedStr); } catch(e){}
+            }
+          }
+
+          if (cData.mobility_plan) {
+            currentMobilityPlan = cData.mobility_plan;
+            localStorage.setItem("afc_mobility_plan", JSON.stringify(currentMobilityPlan));
+          } else {
+            const cachedMob = localStorage.getItem("afc_mobility_plan");
+            if (cachedMob) {
+              try { currentMobilityPlan = JSON.parse(cachedMob); } catch(e){}
+            }
+          }
+
+          if (cData.rehab_plan) {
+            currentRehabPlan = cData.rehab_plan;
+            localStorage.setItem("afc_rehab_plan", JSON.stringify(currentRehabPlan));
+          } else {
+            const cachedRehab = localStorage.getItem("afc_rehab_plan");
+            if (cachedRehab) {
+              try { currentRehabPlan = JSON.parse(cachedRehab); } catch(e){}
+            }
+          }
+
           selectedDayIndex = cData.day_index || 0;
           setLanguage(currentLang);
         }

@@ -38,10 +38,10 @@ MOBILITY_ZONES = {
     },
     "ankles": {
         "id": "ankles",
-        "name_en": "Ankles & Calves",
-        "name_ua": "Гомілкостоп та литки",
+        "name_en": "Ankles, Feet & Toes",
+        "name_ua": "Гомілкостоп, стопи та пальці ніг",
         "icon": "🦶",
-        "families": ["Ankle Mobility"],
+        "families": ["Ankle Mobility", "Foot & Ankle Mobility", "Podiatric Mobility"],
         "default_reps": "10-12 pulses / 40s per leg"
     },
     "wrists_neck": {
@@ -59,6 +59,14 @@ MOBILITY_ZONES = {
         "icon": "🏃",
         "families": ["Posterior Chain Mobility", "Hinge Mobility / Technique"],
         "default_reps": "10 waves / 45s"
+    },
+    "desk_posture": {
+        "id": "desk_posture",
+        "name_en": "Desk Posture: Open Shoulders & Anti-Hump",
+        "name_ua": "💻 Анти-офіс: Розкриття плечей та від холки",
+        "icon": "💻",
+        "families": ["Desk Posture", "Anti-Hump", "Thoracic Extension", "Pectoral Release"],
+        "default_reps": "10-12 reps / 45s"
     }
 }
 
@@ -760,6 +768,170 @@ MOBILITY_EXERCISES = [
         instructions="Stand tall. Hinge at hips, place hands on mat and walk hands forward into high plank, then push hips high into downward dog sinking heels. Walk hands back.",
         default_sets=2, default_reps="6-8 walkouts / 45s", rest_seconds=30,
         joint_stress=["wrist"], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+
+    # =========================================================================
+    # ZONE 7: DESK POSTURE & ANTI-DOWAGER'S HUMP
+    # =========================================================================
+    Exercise(
+        id="posture_chin_tuck_wall_angel",
+        name="Cervical Chin-Tuck + Wall Angel Slide (Anti-Hump C7-T1 Correction)",
+        movement_pattern="Mobility",
+        exercise_family="Desk Posture",
+        primary_muscles=["Deep Cervical Flexors", "Lower Trapezius", "Rhomboids"],
+        secondary_muscles=["Posterior Deltoids", "Thoracic Spine"],
+        equipment_needed=["bodyweight"],
+        difficulty=2, stability_demand="Low", unilateral=False,
+        instructions="Stand with head, back and elbows against wall. Gently retract chin into double chin to align C7-T1. Slide forearms up wall into 'Y', hold 2s, slide down smoothly.",
+        default_sets=3, default_reps="10-12 slides / 45s", rest_seconds=25,
+        joint_stress=[], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+    Exercise(
+        id="posture_roller_chest_opener",
+        name="Longitudinal Foam Roller Chest & Anterior Shoulder Opener (Snow Angels on Roller)",
+        movement_pattern="Mobility",
+        exercise_family="Desk Posture",
+        primary_muscles=["Pectoralis Major & Minor", "Anterior Deltoids"],
+        secondary_muscles=["Thoracic Spine", "Diaphragm"],
+        equipment_needed=["foam roller", "yoga mat"],
+        difficulty=1, stability_demand="Low", unilateral=False,
+        instructions="Lie lengthwise along foam roller supporting head and tailbone. Open arms wide and sweep slowly like snow angels, breathing deeply into ribs and collarbones.",
+        default_sets=2, default_reps="10-12 slow sweeps / 60s", rest_seconds=20,
+        joint_stress=[], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+    Exercise(
+        id="posture_band_w_external_rotation",
+        name="Standing Band 'W' External Shoulder Rotation & Scapular Depression",
+        movement_pattern="Mobility",
+        exercise_family="Desk Posture",
+        primary_muscles=["Infraspinatus", "Teres Minor", "Rhomboids"],
+        secondary_muscles=["Lower Trapezius", "Posterior Deltoids"],
+        equipment_needed=["short/mini resistance bands"],
+        difficulty=1, stability_demand="Low", unilateral=False,
+        instructions="Elbows bent 90 deg and pinned to ribs. Rotate forearms out into 'W' shape against mini-band, squeezing lower shoulder blades down and back. Hold 2s, return.",
+        default_sets=3, default_reps="12-15 reps / 45s", rest_seconds=25,
+        joint_stress=[], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+    Exercise(
+        id="posture_prone_diamond_press",
+        name="Prone Diamond Scapular Press & C7 Extension (Anti-Hump Lower Trap Activator)",
+        movement_pattern="Mobility",
+        exercise_family="Desk Posture",
+        primary_muscles=["Lower Trapezius", "Serratus Anterior", "Spinal Erectors"],
+        secondary_muscles=["Posterior Deltoids", "Deep Neck Extensors"],
+        equipment_needed=["yoga mat"],
+        difficulty=2, stability_demand="Low", unilateral=False,
+        instructions="Prone on mat, hands overhead in diamond shape. Gently retract chin and hover forearms, elbows, and chest 2 inches off floor. Squeeze lower traps below hump. Hold 3s, lower.",
+        default_sets=3, default_reps="10-12 reps / 45s", rest_seconds=30,
+        joint_stress=[], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+    Exercise(
+        id="posture_cervical_isometric_band",
+        name="Gentle Banded Cervical Retraction (Deep Neck Flexor & C7 Alignment)",
+        movement_pattern="Mobility",
+        exercise_family="Desk Posture",
+        primary_muscles=["Deep Cervical Flexors", "Splenius Capitis"],
+        secondary_muscles=["Upper Thoracic Erectors"],
+        equipment_needed=["short/mini resistance bands", "towels/sliders"],
+        difficulty=1, stability_demand="Low", unilateral=False,
+        instructions="Loop light band behind base of skull, hold ends in front. Slide head directly backward against light resistance into cervical retraction without tilting chin. Hold 5s, release.",
+        default_sets=3, default_reps="8-10 holds (5s each)", rest_seconds=25,
+        joint_stress=[], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+    Exercise(
+        id="posture_doorway_pec_minor_release",
+        name="Active Pec Minor & Anterior Deltoid Doorway Release",
+        movement_pattern="Mobility",
+        exercise_family="Desk Posture",
+        primary_muscles=["Pectoralis Minor", "Anterior Deltoid"],
+        secondary_muscles=["Biceps Short Head", "Subclavius"],
+        equipment_needed=["bodyweight"],
+        difficulty=1, stability_demand="Low", unilateral=True,
+        instructions="Forearm vertically on doorframe at shoulder height. Step forward gently and rotate chest away to feel targeted stretch under collarbone. Hold 25-30s each side.",
+        default_sets=2, default_reps="30s each side", rest_seconds=20,
+        joint_stress=[], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+
+    # =========================================================================
+    # ZONE 4 (EXPANDED): PODIATRIC, FOOT & TOES INTRINSIC MOBILITY
+    # =========================================================================
+    Exercise(
+        id="foot_toe_yoga_dissociation",
+        name="Toe Yoga: Big Toe Lift vs. 4 Toes Lift Dissociation",
+        movement_pattern="Mobility",
+        exercise_family="Ankle Mobility",
+        primary_muscles=["Extensor Hallucis Longus", "Extensor Digitorum", "Foot Intrinsics"],
+        secondary_muscles=["Tibialis Anterior", "Plantar Fascia"],
+        equipment_needed=["bodyweight"],
+        difficulty=1, stability_demand="Low", unilateral=False,
+        instructions="Stand barefoot. Pin 4 small toes down while lifting only big toe up. Pause 2s, lower. Then pin big toe down while lifting 4 small toes fan-like. Alternate fluidly.",
+        default_sets=3, default_reps="10-12 alternating cycles / 45s", rest_seconds=20,
+        joint_stress=[], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+    Exercise(
+        id="foot_short_foot_arch_doming",
+        name="'Short Foot' Intrinsic Arch Doming Hold (Flat Feet & Valgus Correction)",
+        movement_pattern="Mobility",
+        exercise_family="Ankle Mobility",
+        primary_muscles=["Abductor Hallucis", "Plantar Intrinsics", "Tibialis Posterior"],
+        secondary_muscles=["Peroneals", "Soleus"],
+        equipment_needed=["bodyweight"],
+        difficulty=2, stability_demand="Low", unilateral=True,
+        instructions="Stand barefoot on tripod foot (heel, big toe base, little toe base). Without curling toes, draw ball of big toe toward heel, doming medial arch. Hold 6s, release.",
+        default_sets=3, default_reps="8-10 holds (6s each)", rest_seconds=25,
+        joint_stress=[], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+    Exercise(
+        id="foot_ball_plantar_release",
+        name="Myofascial Plantar Fascia Roll with Small Ball (Heel to Metatarsals)",
+        movement_pattern="Mobility",
+        exercise_family="Ankle Mobility",
+        primary_muscles=["Plantar Fascia", "Flexor Digitorum Brevis"],
+        secondary_muscles=["Achilles Tendon", "Calf Complex"],
+        equipment_needed=["small fitness ball"],
+        difficulty=1, stability_demand="Low", unilateral=True,
+        instructions="Stand or sit with small ball under bare foot. Apply comfortable bodyweight pressure, rolling slowly from heel to metatarsal heads. Pause on tight spots for 5-10s.",
+        default_sets=2, default_reps="60s per foot", rest_seconds=20,
+        joint_stress=[], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+    Exercise(
+        id="foot_towel_scrunches_spread",
+        name="Toe Towel Scrunches & Wide Toe Splay",
+        movement_pattern="Mobility",
+        exercise_family="Ankle Mobility",
+        primary_muscles=["Flexor Hallucis Brevis", "Lumbricals", "Interossei"],
+        secondary_muscles=["Plantar Fascia"],
+        equipment_needed=["towels/sliders"],
+        difficulty=1, stability_demand="Low", unilateral=True,
+        instructions="Seated with bare foot on flat towel, heel pinned. Use toes to grab and gather towel toward heel. Spread toes wide into fan, push towel away, repeat.",
+        default_sets=2, default_reps="3 towel gathers each foot", rest_seconds=25,
+        joint_stress=[], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+    Exercise(
+        id="foot_heel_toe_supination_rock",
+        name="Controlled Heel-to-Toe Waves & Outer/Inner Edge Ankle Control",
+        movement_pattern="Mobility",
+        exercise_family="Ankle Mobility",
+        primary_muscles=["Tibialis Anterior", "Gastrocnemius", "Soleus"],
+        secondary_muscles=["Peroneals", "Plantar Flexors"],
+        equipment_needed=["bodyweight"],
+        difficulty=1, stability_demand="Medium", unilateral=False,
+        instructions="Stand barefoot, feet parallel. Roll onto balls of feet lifting heels high, then lower heels smoothly and shift weight to heels lifting toes up toward shins. Wave fluidly.",
+        default_sets=3, default_reps="12-15 waves / 45s", rest_seconds=20,
+        joint_stress=["ankle"], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
+    ),
+    Exercise(
+        id="foot_single_leg_clock_reach",
+        name="Single-Leg Barefoot Balance & Tripod Foot Stabilization",
+        movement_pattern="Mobility",
+        exercise_family="Ankle Mobility",
+        primary_muscles=["Tibialis Posterior", "Peroneus Longus", "Foot Intrinsics"],
+        secondary_muscles=["Gluteus Medius", "Calf Complex"],
+        equipment_needed=["bodyweight"],
+        difficulty=2, stability_demand="High", unilateral=True,
+        instructions="Barefoot on one leg, knee soft. Reach opposite foot to tap 12 o'clock, 3 o'clock, and 6 o'clock on floor while standing foot roots through tripod with lifted arch.",
+        default_sets=3, default_reps="4-5 clock rounds each leg", rest_seconds=30,
+        joint_stress=["ankle"], location=["home", "gym"], trx_anchor="any", is_compound_combo=False
     )
 ]
 
@@ -1045,5 +1217,77 @@ MOBILITY_TRANSLATIONS = {
         "Стоячи прямо, нахиліться вперед і поставте долоні на підлогу.",
         "Пройдіть руками вперед у планку, потім виштовхніть таз угору в собаку мордою вниз, потягнувши п'яти до підлоги. Поверніться руками назад.",
         "Коліна можна злегка підігнути при кроках руками."
+    ],
+    "posture_chin_tuck_wall_angel": [
+        "Ретракція шиї (від холки) + ковзання рук по стіні «Янгол»",
+        "Станьте спиною, крижами та потилицею до рівної стіни. М'яко втягніть підборіддя назад у подвійне підборіддя.",
+        "Притисніть передпліччя до стіни у позицію 'W'. Ковзайте руками вгору в 'Y' без відриву потилиці та ліктів від стіни на 10-12 повторень.",
+        "Цей рух прицільно розвантажує перехід шиї в грудний відділ C7-T1, де утворюється холка."
+    ],
+    "posture_roller_chest_opener": [
+        "Поздовжнє розкриття грудного відділу та плечей лежачи вздовж ролу",
+        "Ляжте вздовж довгого ролу, куприк та потилиця на ролі, ноги зігнуті на підлозі.",
+        "Розкрийте руки широко в сторони долонями до стелі. Повільно ковзайте руками по підлозі у формі 'снігового янгола', дихаючи в ключиці.",
+        "Гравітація м'яко розкриває затиснуті грудні м'язи та відновлює правильну поставу."
+    ],
+    "posture_band_w_external_rotation": [
+        "Розведення рук із резинкою у позицію «W» для розвороту плечей назад та проти сутулості",
+        "Стоячи рівно, резинка на зап'ястях, лікті 90° притиснуті до боків корпусу.",
+        "Не відриваючи ліктів від ребер, розведіть передпліччя назовні у форму 'W'. Зведіть лопатки до центру та вниз на 2 сек паузи.",
+        "Плечі опущені вниз від вух. Прицільно усуває загорнуті вперед плечі."
+    ],
+    "posture_prone_diamond_press": [
+        "Підйом передпліч «Діамант» лежачи на животі — прицільна вправа від холки та для постави",
+        "Ляжте на живіт, руки над головою у формі 'діаманта' (великі та вказівні пальці торкаються), чоло на рушнику.",
+        "М'яко втягніть підборіддя. На видимоху підніміть передпліччя та груди на 5 см від підлоги, утримуючи 3 сек напруження під холкою.",
+        "Не прогинайтеся в попереку; напружуйте нижню порцію трапеції та зону між лопатками."
+    ],
+    "posture_cervical_isometric_band": [
+        "М'яка ізометрична ретракція голови назад для усунення холки",
+        "Сядьте рівно, стрічка або рушник на потилиці (основа черепа), кінці тримайте руками попереду.",
+        "Створіть руками легкий опір і повільно зсувайте голову строго назад по горизонталі. Утримайте 5 сек, плавно відпустіть.",
+        "Не закидайте підборіддя вгору; зміцнює глибокі згиначі шиї та усуває основу для холки."
+    ],
+    "posture_doorway_pec_minor_release": [
+        "Активне розкриття малих грудних м'язів та загорнутих плечей у дверному отворі",
+        "У дверному отворі покладіть передпліччя вертикально на одвірок на рівні плеча.",
+        "Зробіть плавний крок вперед і розверніть корпус у протилежний бік, розтягуючи зону під ключицею 25-30 сек на кожну сторону.",
+        "Лопатка опущена вниз. Знімає спазм з малого грудного м'яза."
+    ],
+    "foot_toe_yoga_dissociation": [
+        "«Йога для пальців стоп»: почерговий підйом великого пальця та 4 пальців окремо",
+        "Сядьте або станьте босоніж на рівну підлогу.",
+        "Притисніть 4 маленьких пальці до підлоги та підніміть тільки великий палець вгору (пауза 2 сек). Потім навпаки: великий палець притиснутий, 4 пальці віялом угору.",
+        "Відновлює точний нейром'язовий контроль поздовжнього склепіння стопи."
+    ],
+    "foot_short_foot_arch_doming": [
+        "Вправа «Коротка стопа» — формування та утримання склепіння стопи без підгинання пальців",
+        "Станьте босоніж на три точки опори: п'ята, основа великого пальця та основа мізинця.",
+        "Не підгинаючи пальці, підтягніть подушечку під великим пальцем до п'яти, піднімаючи внутрішнє склепіння стопи 'будиночком'. Тримайте 6 сек.",
+        "Пальці лежать рівно на підлозі, скорочуються саме внутрішні м'язи стопи проти плоскостопості."
+    ],
+    "foot_ball_plantar_release": [
+        "Прокатка стопи та підошовної фасції малим м'ячем від п'яти до пальців",
+        "Покладіть тенісний або масажний м'яч під підошву босої стопи.",
+        "Створіть комфортний тиск і повільно прокатуйте м'яч уздовж стопи від п'яти до подушечок пальців протягом 60 сек.",
+        "На тригерних чутливих точках затримайтеся на 5-10 сек з глибоким диханням."
+    ],
+    "foot_towel_scrunches_spread": [
+        "Збирання рушника пальцями стоп та широке віялове розведення пальців",
+        "Сядьте на стілець, рушник розправлений перед босою стопою, п'ята на краю.",
+        "Пальцями стопи збирайте та зминайте рушник під себе у напрямку п'яти. Зібравши, розчепірте пальці широко віялом, розправте і повторіть.",
+        "П'ята щільно притиснута до підлоги; працюють згиначі пальців."
+    ],
+    "foot_heel_toe_supination_rock": [
+        "Плавні перекати п'ята-носок з контролем завалювання стопи",
+        "Станьте босоніж, стопи паралельні на ширині стегон.",
+        "Плавно перекочуйтеся вперед на носки з високим підйомом п'ят, потім плавно на п'яти з підйомом носків до гомілок.",
+        "Контролюйте, щоб гомілкостоп не завалювався всередину або назовні."
+    ],
+    "foot_single_leg_clock_reach": [
+        "Баланс босоніж на «трикутнику стопи» для стабілізації гомілкостопа",
+        "Станьте босоніж на одну ногу, опорне коліно м'яке.",
+        "Вільною ногою по черзі торкайтеся умовного циферблату на підлозі на 12, 3 та 6 годин, утримуючи арку опорної стопи піднятою.",
+        "Запобігає вальгусному завалюванню стопи та зміцнює зв'язки гомілкостопа."
     ]
 }

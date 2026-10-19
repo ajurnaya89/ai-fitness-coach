@@ -111,7 +111,7 @@ def init_db():
     default_equip_json = json.dumps([
         "adjustable dumbbells", "TRX", "short/mini resistance bands",
         "long resistance bands", "towels/sliders", "couch/bench support",
-        "small fitness ball", "yoga blocks"
+        "small fitness ball", "yoga blocks", "foam roller"
     ])
 
     # Ensure default user profile exists
@@ -182,8 +182,34 @@ def init_db():
         perceived_difficulty INTEGER NOT NULL,
         notes TEXT,
         date_performed TEXT NOT NULL,
+        user_comment TEXT DEFAULT '',
+        disliked INTEGER DEFAULT 0,
         FOREIGN KEY (workout_id) REFERENCES workout_sessions (workout_id),
         FOREIGN KEY (exercise_id) REFERENCES exercises (id)
+    )
+    """)
+
+    # Safe migrations for exercise_logs
+    for col, col_def in [
+        ("user_comment", "TEXT DEFAULT ''"),
+        ("disliked", "INTEGER DEFAULT 0"),
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE exercise_logs ADD COLUMN {col} {col_def}")
+        except Exception:
+            pass
+
+    # Immediate in-progress exercise feedback cache (Preserved across runs)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS exercise_feedback_state (
+        exercise_id TEXT PRIMARY KEY,
+        actual_sets INTEGER,
+        actual_reps TEXT,
+        actual_weight TEXT,
+        perceived_difficulty INTEGER DEFAULT 3,
+        user_comment TEXT DEFAULT '',
+        disliked INTEGER DEFAULT 0,
+        updated_at TEXT
     )
     """)
 
@@ -193,7 +219,7 @@ def init_db():
     for raw_ex in EXERCISE_CATALOG:
         ex = translations.enrich_exercise(raw_ex)
         cursor.execute("""
-        INSERT INTO exercises (
+        INSERT OR REPLACE INTO exercises (
             id, name, name_ua, movement_pattern, exercise_family,
             primary_muscles, secondary_muscles, equipment_needed,
             difficulty, stability_demand, unilateral, instructions, instructions_ua,
@@ -288,6 +314,9 @@ def get_exercise_history() -> Dict[str, Dict]:
     - last_performed_date: str or None
     - times_skipped: int
     - avg_difficulty: float
+    - disliked: bool
+    - last_comment: str
+    - user_comment: str
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -298,23 +327,123 @@ def get_exercise_history() -> Dict[str, Dict]:
         COUNT(CASE WHEN skipped = 0 THEN 1 END) AS times_performed,
         MAX(CASE WHEN skipped = 0 THEN date_performed ELSE NULL END) AS last_performed_date,
         COUNT(CASE WHEN skipped = 1 THEN 1 END) AS times_skipped,
-        AVG(CASE WHEN skipped = 0 THEN perceived_difficulty ELSE NULL END) AS avg_difficulty
+        AVG(CASE WHEN skipped = 0 THEN perceived_difficulty ELSE NULL END) AS avg_difficulty,
+        MAX(disliked) AS was_disliked
     FROM exercise_logs
     GROUP BY exercise_id
     """)
 
     rows = cursor.fetchall()
+
+    try:
+        cursor.execute("SELECT * FROM exercise_feedback_state")
+        feedback_rows = {r["exercise_id"]: dict(r) for r in cursor.fetchall()}
+    except Exception:
+        feedback_rows = {}
+
     conn.close()
 
     history = {}
     for row in rows:
-        history[row["exercise_id"]] = {
+        ex_id = row["exercise_id"]
+        fb = feedback_rows.get(ex_id, {})
+        disliked_flag = bool(row["was_disliked"] or fb.get("disliked", 0))
+        comment = fb.get("user_comment", "") or ""
+        history[ex_id] = {
             "times_performed": row["times_performed"],
             "last_performed_date": row["last_performed_date"],
             "times_skipped": row["times_skipped"],
-            "avg_difficulty": row["avg_difficulty"]
+            "avg_difficulty": row["avg_difficulty"],
+            "disliked": disliked_flag,
+            "last_comment": comment,
+            "user_comment": comment,
+            "actual_sets": fb.get("actual_sets"),
+            "actual_reps": fb.get("actual_reps", ""),
+            "actual_weight": fb.get("actual_weight", ""),
+            "perceived_difficulty": fb.get("perceived_difficulty", 3)
         }
+
+    for ex_id, fb in feedback_rows.items():
+        if ex_id not in history:
+            history[ex_id] = {
+                "times_performed": 0,
+                "last_performed_date": None,
+                "times_skipped": 0,
+                "avg_difficulty": fb.get("perceived_difficulty", 3),
+                "disliked": bool(fb.get("disliked", 0)),
+                "last_comment": fb.get("user_comment", "") or "",
+                "user_comment": fb.get("user_comment", "") or "",
+                "actual_sets": fb.get("actual_sets"),
+                "actual_reps": fb.get("actual_reps", ""),
+                "actual_weight": fb.get("actual_weight", ""),
+                "perceived_difficulty": fb.get("perceived_difficulty", 3)
+            }
+        else:
+            if fb.get("disliked"):
+                history[ex_id]["disliked"] = True
+            if fb.get("user_comment"):
+                history[ex_id]["last_comment"] = fb.get("user_comment")
+                history[ex_id]["user_comment"] = fb.get("user_comment")
+            if fb.get("actual_sets") is not None:
+                history[ex_id]["actual_sets"] = fb.get("actual_sets")
+            if fb.get("actual_reps"):
+                history[ex_id]["actual_reps"] = fb.get("actual_reps")
+            if fb.get("actual_weight"):
+                history[ex_id]["actual_weight"] = fb.get("actual_weight")
+            if fb.get("perceived_difficulty") is not None:
+                history[ex_id]["perceived_difficulty"] = fb.get("perceived_difficulty")
+
     return history
+
+
+def save_immediate_exercise_feedback(
+    exercise_id: str,
+    sets: Optional[int] = None,
+    reps: str = "",
+    weight: str = "",
+    difficulty: Optional[int] = None,
+    comment: str = "",
+    disliked: Optional[bool] = None,
+    actual_sets: Optional[int] = None,
+    actual_reps: Optional[str] = None,
+    actual_weight: Optional[str] = None,
+    perceived_difficulty: Optional[int] = None,
+    user_comment: Optional[str] = None
+):
+    """Saves immediate in-progress exercise feedback, comments, and disliked blacklist flags."""
+    final_sets = actual_sets if actual_sets is not None else sets
+    final_reps = actual_reps if actual_reps is not None else reps
+    final_weight = actual_weight if actual_weight is not None else weight
+    final_diff = perceived_difficulty if perceived_difficulty is not None else (difficulty if difficulty is not None else 3)
+    final_comment = user_comment if user_comment is not None else comment
+    final_disliked = disliked if disliked is not None else False
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO exercise_feedback_state (
+        exercise_id, actual_sets, actual_reps, actual_weight, perceived_difficulty, user_comment, disliked, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(exercise_id) DO UPDATE SET
+        actual_sets = CASE WHEN excluded.actual_sets IS NOT NULL THEN excluded.actual_sets ELSE exercise_feedback_state.actual_sets END,
+        actual_reps = CASE WHEN excluded.actual_reps != '' THEN excluded.actual_reps ELSE exercise_feedback_state.actual_reps END,
+        actual_weight = CASE WHEN excluded.actual_weight != '' THEN excluded.actual_weight ELSE exercise_feedback_state.actual_weight END,
+        perceived_difficulty = excluded.perceived_difficulty,
+        user_comment = excluded.user_comment,
+        disliked = excluded.disliked,
+        updated_at = excluded.updated_at
+    """, (
+        exercise_id,
+        final_sets,
+        final_reps,
+        final_weight,
+        final_diff,
+        final_comment,
+        1 if final_disliked else 0,
+        datetime.now().isoformat()
+    ))
+    conn.commit()
+    conn.close()
 
 
 def get_user_profile() -> Dict:
@@ -328,7 +457,7 @@ def get_user_profile() -> Dict:
     default_equipment = [
         "adjustable dumbbells", "TRX", "short/mini resistance bands",
         "long resistance bands", "towels/sliders", "couch/bench support",
-        "small fitness ball", "yoga blocks"
+        "small fitness ball", "yoga blocks", "foam roller"
     ]
 
     if not row:
@@ -525,11 +654,14 @@ def save_completed_workout(workout_log: CompletedWorkoutLog):
         ))
 
         for elog in workout_log.exercise_logs:
+            user_cmt = getattr(elog, "user_comment", "") or ""
+            is_disliked = 1 if getattr(elog, "disliked", False) else 0
             cursor.execute("""
             INSERT INTO exercise_logs (
                 workout_id, exercise_id, sets_completed, reps_completed,
-                weight_used, skipped, perceived_difficulty, notes, date_performed
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                weight_used, skipped, perceived_difficulty, notes, date_performed,
+                user_comment, disliked
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 workout_log.workout_id,
                 elog.exercise_id,
@@ -539,8 +671,31 @@ def save_completed_workout(workout_log: CompletedWorkoutLog):
                 1 if elog.skipped else 0,
                 elog.perceived_difficulty,
                 elog.notes,
-                workout_log.date_completed
+                workout_log.date_completed,
+                user_cmt,
+                is_disliked
             ))
+
+            if user_cmt or is_disliked:
+                cursor.execute("""
+                INSERT INTO exercise_feedback_state (
+                    exercise_id, actual_sets, actual_reps, actual_weight,
+                    perceived_difficulty, user_comment, disliked, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(exercise_id) DO UPDATE SET
+                    user_comment = CASE WHEN excluded.user_comment != '' THEN excluded.user_comment ELSE exercise_feedback_state.user_comment END,
+                    disliked = CASE WHEN excluded.disliked = 1 THEN 1 ELSE exercise_feedback_state.disliked END,
+                    updated_at = excluded.updated_at
+                """, (
+                    elog.exercise_id,
+                    elog.sets_completed,
+                    elog.reps_completed,
+                    elog.weight_used,
+                    elog.perceived_difficulty,
+                    user_cmt,
+                    is_disliked,
+                    workout_log.date_completed
+                ))
 
         conn.commit()
     except Exception as e:
